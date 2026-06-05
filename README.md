@@ -1,83 +1,88 @@
 # Multi-Vault Navigator 🧭
 
-**Multi-Vault Navigator** adalah plugin Obsidian *local-first* yang didesain untuk menjembatani batasan antar vault. Jika kamu menggunakan beberapa vault (misal: vault pekerjaan, vault personal, dan vault penulisan), plugin ini memungkinkanmu untuk mencari, melihat, dan berpindah antar vault layaknya semuanya berada dalam satu *workspace* terpadu.
+**Multi-Vault Navigator** is a local-first Obsidian plugin designed to bridge the gap between multiple vaults. If you use multiple vaults (e.g., work vault, personal vault, and writing vault), this plugin allows you to search, view, and switch between vaults as if they were all in one unified workspace.
 
-Dibuat oleh **Hir43th**.
+[Baca dalam Bahasa Indonesia](README_id.md)
 
 ---
 
-## ✨ Fitur Utama
+## 🔒 Obsidian Policies Disclosure
 
-### 🔍 1. Google-like Search Page (Pencarian Lintas Vault)
-Daripada harus mengingat di vault mana kamu menyimpan sebuah catatan, cukup gunakan **Search Page**.
-- Buka melalui tombol kaca pembesar (🔍) di **Ribbon Sidebar** kiri.
-- Tampilan berukuran penuh yang mirip mesin pencari modern.
-- Menampilkan judul (biru), lokasi vault & path (hijau), serta cuplikan isi catatan (*snippet*).
-- Memiliki sistem pembobotan cerdas (judul file diberi prioritas lebih tinggi daripada isi catatan).
+To comply with the [Obsidian Developer Policies](https://docs.obsidian.md/Plugins/Releasing/Developer+policies), please review the following disclosures regarding this plugin:
+
+- **Accessing files outside of Obsidian vaults**: This plugin requires accessing files outside of the currently active Obsidian vault. 
+  - **Why this is needed**: This plugin's core feature is searching and previewing notes from your *other* Obsidian vaults. To achieve this, it uses Node's native `fs` module to read the markdown contents of vaults you have configured or that were automatically detected from your OS's global Obsidian configuration (`obsidian.json`). 
+  - **Privacy**: All operations are 100% local. No files, metadata, or telemetry are ever sent over the internet or uploaded to any server.
+
+---
+
+## ✨ Key Features
+
+### 🔍 1. Cross-Vault Command Center
+Instead of remembering which vault a note is saved in, use the Command Center dashboard.
+- Full-screen dashboard resembling a modern search engine.
+- Displays notes across all your vaults with intelligent fuzzy search and snippet previews.
+- Pin your favorite cross-vault notes and save frequent searches directly to the sidebar.
 
 ### 📖 2. Read-Only Cross-Vault View
-Natively, Obsidian tidak mengizinkan kamu membuka catatan dari luar vault aktif ke dalam tab. Plugin ini mengatasinya dengan aman:
-- Saat kamu mengklik hasil pencarian dari vault lain, catatan tersebut akan dibuka di **Tab baru** di vault kamu yang sekarang.
-- Catatan ditampilkan dalam mode **Read-Only** (hanya baca) dengan *render* Markdown penuh, sehingga kamu bisa membaca referensi silang tanpa harus menutup vault utama dan berpindah konteks.
+Natively, Obsidian does not allow you to open a note from outside the active vault in a tab. This plugin solves that safely:
+- When clicking a search result from another vault, the note opens in a **new tab** within your current vault.
+- The note is displayed in a native-feeling **Read-Only Mode** with full markdown rendering.
+- Includes actions to quickly "Open in Source Vault" or "Copy Cross-Vault Link."
 
-### 🤖 3. Auto-Detect Vaults
-Kamu tidak perlu mendaftarkan vault kamu satu per satu. Saat pertama kali diaktifkan, plugin akan membaca konfigurasi global OS kamu dan mendeteksi semua vault Obsidian yang pernah kamu buka, lalu menambahkannya secara otomatis.
+### 🔗 3. Natural Cross-Vault Links
+Write `[[VaultName::NoteTitle]]` in any note. The plugin parses these references and allows you to click them to instantly open the cross-vault note in the read-only preview.
 
-### ⏱️ 4. Recent Files (File Terakhir Dibuka)
-Ingin melanjutkan pekerjaan yang kamu lakukan kemarin tapi lupa di vault mana? Gunakan perintah **Recent Files**.
-- Menampilkan daftar catatan yang paling baru dimodifikasi dari *seluruh* vault yang kamu miliki.
+### 🗃️ 4. Recent Files & Quick Switch
+- **Recent Files**: See the 50 most recently modified files across *all* your vaults.
+- **Switch Vault**: Instantly launch your other vaults without going through the native Obsidian Vault Manager.
 
-### 🚀 5. Quick Switch Vault
-Fitur pencarian cepat (Fuzzy Finder) untuk berpindah ke vault lain secara instan tanpa harus membuka Vault Manager bawaan Obsidian.
+### 📥 5. Smart Inbox Router (Move/Copy)
+Easily move or copy a note from your current vault to another vault. The plugin includes a Smart Inbox Router that suggests the most relevant destination vault based on the tags present in your note.
 
----
-
-## 🛠️ Penggunaan & Commands
-
-Buka **Command Palette** (Ctrl/Cmd + P) dan ketik `Multi-Vault Navigator` untuk melihat semua perintah yang tersedia:
-
-- **Cross-Vault Command Center (Search Page)**: Tampilan utama (dashboard) untuk mencari catatan lintas vault, melihat *Pinned Notes*, dan *Saved Searches*. Klik ikon 🔍 di sidebar.
-- **Natural Cross-Vault Links**: Tulis `[[VaultName::NamaCatatan]]` di catatan mana saja, dan tautan akan otomatis menjadi aktif dan bisa diklik untuk membuka catatan dari vault lain!
-- **Find Duplicate Notes**: Pindai seluruh vault untuk menemukan catatan dengan judul yang persis sama, dan bandingkan isinya.
-- **Search All Vaults**: Membuka popup modal (dropdown) untuk mencari ke seluruh vault dengan cepat.
-- **Recent Files**: Membuka popup modal berisi daftar 50 file terakhir diubah dari semua vault.
-- **Switch Vault**: Membuka popup modal untuk berpindah antar vault dengan cepat.
-- **Move/Copy Current File to Vault**: Membuka popup untuk memindahkan (Move) atau menyalin (Copy) catatan yang sedang dibuka ke vault lain. **(Dilengkapi Inbox Router yang merekomendasikan vault tujuan berdasarkan Tag!)**.
-- **Copy Cross-Vault Link for Current File**: Membuat tautan spesial (`obsidian://mvn-open...`) ke clipboard.
-- **Open Global Tag Explorer**: Membuka tab yang menampilkan kumpulan seluruh *tag* dari semua vault.
-- **Open Cross-Vault Daily Notes**: Membuka tab *dashboard* yang mengurutkan semua *daily notes* (format `YYYY-MM-DD`) dari semua vault.
-- **Refresh Index**: Membaca ulang isi semua vault dan memperbarui *cache* pencarian secara manual.
+### 👯 6. Duplicate Note Detector
+Scan all your connected vaults to find notes with the exact same name, helping you merge scattered information.
 
 ---
 
-## ⚙️ Pengaturan (Settings)
+## 🛠️ Commands
 
-Di menu **Settings > Multi-Vault Navigator**, kamu dapat mengatur:
-- **Daftar Vault**: Menghidupkan/mematikan indeks untuk vault tertentu, atau menghapus vault dari daftar.
-- **Add Manual Vault**: Menambahkan absolute path (`C:/...` atau `/Users/...`) jika ada vault yang tidak terdeteksi otomatis.
-- **Max Preview Characters**: Menentukan seberapa panjang cuplikan teks (*snippet*) yang disimpan untuk pencarian (default: 1000 karakter).
-- **Global Exclude Patterns**: Daftar nama folder atau file yang dipisahkan koma (misal: `Private, Rahasia, diary.md`) agar tidak ikut terindeks di seluruh vault (sangat berguna untuk menjaga privasi catatan tertentu).
-- **Refresh Index**: Tombol manual untuk membangun ulang indeks pencarian.
-
----
-
-## 🔒 Keamanan & Privasi (Local-First)
-
-Plugin ini 100% **Local-First**:
-- Tidak ada data yang dikirim ke internet atau *cloud*.
-- Indeks pencarian disimpan secara lokal dalam bentuk `.json` di dalam folder plugin `.obsidian/plugins/multi-vault-navigator/`.
-- Memanfaatkan library `minisearch` yang sangat ringan dan berjalan sepenuhnya di memori komputermu tanpa aplikasi *server* eksternal.
+Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to see available commands:
+- **Cross-Vault Command Center (Search Page)**
+- **Search All Vaults**
+- **Recent Files**
+- **Switch Vault**
+- **Move/Copy Current File to Vault**
+- **Copy Cross-Vault Link for Current File**
+- **Find Duplicate Notes**
+- **Open Global Tag Explorer**
+- **Open Cross-Vault Daily Notes**
+- **Refresh Index**
 
 ---
 
-## 🏗️ Pemasangan (Installation)
+## ⚙️ Settings
 
-*(Untuk saat ini, plugin dipasang secara manual)*
+Go to **Settings > Multi-Vault Navigator** to configure:
+- **Vault List**: Toggle indexing for specific vaults or remove them.
+- **Add Manual Vault**: Add an absolute path to a vault if it wasn't auto-detected.
+- **Max Preview Characters**: Length of text snippets saved for search indexing.
+- **Global Exclude Patterns**: Comma-separated list of folder/file names to ignore across all vaults (e.g., `Private, secrets`).
 
-1. Unduh atau *build* plugin ini. Pastikan kamu memiliki file `main.js`, `manifest.json`, dan `styles.css`.
-2. Buat folder baru di dalam vault kamu: `<path-ke-vault-kamu>/.obsidian/plugins/multi-vault-navigator/`.
-3. Salin ketiga file tersebut ke dalam folder yang baru dibuat.
-4. Buka **Settings > Community plugins** di Obsidian.
-5. Matikan **Safe mode** (jika masih menyala).
-6. Nyalakan (*enable*) plugin **Multi-Vault Navigator**.
-7. Klik lambang 🔍 di sidebar kiri dan nikmati pencarian lintas vault!
+---
+
+## 🏗️ Installation
+
+*(Currently manual installation only)*
+
+1. Download the latest release (`main.js`, `manifest.json`, `styles.css`).
+2. Create a folder in your vault: `<your-vault-path>/.obsidian/plugins/multi-vault-navigator/`.
+3. Paste the three files into the folder.
+4. Go to **Settings > Community plugins** in Obsidian.
+5. Disable **Safe mode**.
+6. **Enable** the Multi-Vault Navigator plugin.
+
+---
+
+## 📜 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

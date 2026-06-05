@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, setIcon } from 'obsidian';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IndexedFile } from '../types';
@@ -35,19 +35,7 @@ export class ExternalFileView extends ItemView {
   }
 
   async onOpen() {
-    this.addAction("external-link", "Open in Source Vault", () => {
-      if (this.file) {
-        window.open(`obsidian://open?vault=${encodeURIComponent(this.file.vaultName)}&file=${encodeURIComponent(this.file.relativePath)}`);
-      }
-    });
-
-    this.addAction("link", "Copy Cross-Vault Link", async () => {
-      if (this.file) {
-        const linkText = `[[${this.file.vaultName}::${this.file.basename}]]`;
-        await navigator.clipboard.writeText(linkText);
-        new Notice("Cross-Vault Link copied to clipboard!");
-      }
-    });
+    // Actions are now rendered inline next to the metadata badge
   }
 
   public async setFile(file: IndexedFile) {
@@ -71,15 +59,31 @@ export class ExternalFileView extends ItemView {
     }
 
     const sizer = container.createDiv({ cls: 'markdown-preview-view markdown-rendered' });
-    const sizerInner = sizer.createDiv({ cls: 'markdown-preview-sizer markdown-preview-section' });
+    const sizerInner = sizer.createDiv({ cls: 'markdown-preview-sizer markdown-preview-section', attr: { style: 'max-width: var(--file-line-width, 700px); margin: 0 auto;' } });
 
     // Inline title
     sizerInner.createDiv({ cls: 'markdown-preview-pusher', attr: { style: 'width: 1px; height: 0.1px; margin-bottom: 0px;' } });
     sizerInner.createEl('h1', { cls: 'inline-title', text: this.file.basename });
     
-    // Metadata badge
-    const metaDiv = sizerInner.createDiv({ cls: 'mvn-external-meta', attr: { style: 'margin-bottom: 30px; margin-top: -10px;' } });
+    // Metadata badge & actions
+    const metaDiv = sizerInner.createDiv({ cls: 'mvn-external-meta', attr: { style: 'display: flex; align-items: center; gap: 10px; margin-bottom: 30px; margin-top: -10px;' } });
     metaDiv.createEl('span', { text: `Read-Only • [${this.file.vaultName}]`, cls: 'mvn-text-muted', attr: { style: 'font-size: 0.85em; opacity: 0.7;' } });
+
+    const inlineActions = metaDiv.createDiv({ cls: 'mvn-external-inline-actions', attr: { style: 'display: flex; gap: 5px;' } });
+    
+    const btnOpen = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Open in Source Vault' } });
+    setIcon(btnOpen, "external-link");
+    btnOpen.onclick = () => {
+      window.open(`obsidian://open?vault=${encodeURIComponent(this.file!.vaultName)}&file=${encodeURIComponent(this.file!.relativePath)}`);
+    };
+
+    const btnLink = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Copy Cross-Vault Link' } });
+    setIcon(btnLink, "link");
+    btnLink.onclick = async () => {
+      const linkText = `[[${this.file!.vaultName}::${this.file!.basename}]]`;
+      await navigator.clipboard.writeText(linkText);
+      new Notice("Cross-Vault Link copied to clipboard!");
+    };
 
     const contentDiv = sizerInner.createDiv();
     // Render the markdown content
