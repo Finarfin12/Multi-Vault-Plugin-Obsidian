@@ -1,0 +1,10 @@
+{
+  "id": "multi-vault-navigator",
+  "name": "Multi-Vault Navigator",
+  "version": "2.0.1",
+  "minAppVersion": "1.0.0",
+  "description": "Navigate, search, and access recent files across multiple Obsidian vaults.",
+  "author": "Hir43th",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}

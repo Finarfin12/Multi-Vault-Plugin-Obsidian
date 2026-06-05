@@ -1,0 +1,29 @@
+{
+  "name": "multi-vault-navigator",
+  "version": "2.0.1",
+  "description": "Cross-vault search and navigation for Obsidian.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "search",
+    "vault"
+  ],
+  "author": "Hir43th",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "builtin-modules": "^5.2.0",
+    "esbuild": "^0.20.0",
+    "obsidian": "latest",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "minisearch": "^6.3.0"
+  }
+}
