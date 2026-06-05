@@ -1,4 +1,4 @@
-# Multi-Vault Navigator 🧭
+# Multi-Vault Navigator
 
 **Multi-Vault Navigator** adalah plugin Obsidian *local-first* yang didesain untuk menjembatani batasan antar vault. Jika kamu menggunakan beberapa vault (misal: vault pekerjaan, vault personal, dan vault penulisan), plugin ini memungkinkanmu untuk mencari, melihat, dan berpindah antar vault layaknya semuanya berada dalam satu *workspace* terpadu.
 
@@ -6,33 +6,33 @@ Dibuat oleh **Hir43th**.
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-### 🔍 1. Google-like Search Page (Pencarian Lintas Vault)
+### 1. Google-like Search Page (Pencarian Lintas Vault)
 Daripada harus mengingat di vault mana kamu menyimpan sebuah catatan, cukup gunakan **Search Page**.
 - Buka melalui tombol kaca pembesar (🔍) di **Ribbon Sidebar** kiri.
 - Tampilan berukuran penuh yang mirip mesin pencari modern.
 - Menampilkan judul (biru), lokasi vault & path (hijau), serta cuplikan isi catatan (*snippet*).
 - Memiliki sistem pembobotan cerdas (judul file diberi prioritas lebih tinggi daripada isi catatan).
 
-### 📖 2. Read-Only Cross-Vault View
+### 2. Read-Only Cross-Vault View
 Natively, Obsidian tidak mengizinkan kamu membuka catatan dari luar vault aktif ke dalam tab. Plugin ini mengatasinya dengan aman:
 - Saat kamu mengklik hasil pencarian dari vault lain, catatan tersebut akan dibuka di **Tab baru** di vault kamu yang sekarang.
 - Catatan ditampilkan dalam mode **Read-Only** (hanya baca) dengan *render* Markdown penuh, sehingga kamu bisa membaca referensi silang tanpa harus menutup vault utama dan berpindah konteks.
 
-### 🤖 3. Auto-Detect Vaults
+### 3. Auto-Detect Vaults
 Kamu tidak perlu mendaftarkan vault kamu satu per satu. Saat pertama kali diaktifkan, plugin akan membaca konfigurasi global OS kamu dan mendeteksi semua vault Obsidian yang pernah kamu buka, lalu menambahkannya secara otomatis.
 
-### ⏱️ 4. Recent Files (File Terakhir Dibuka)
+### 4. Recent Files (File Terakhir Dibuka)
 Ingin melanjutkan pekerjaan yang kamu lakukan kemarin tapi lupa di vault mana? Gunakan perintah **Recent Files**.
 - Menampilkan daftar catatan yang paling baru dimodifikasi dari *seluruh* vault yang kamu miliki.
 
-### 🚀 5. Quick Switch Vault
+### 5. Quick Switch Vault
 Fitur pencarian cepat (Fuzzy Finder) untuk berpindah ke vault lain secara instan tanpa harus membuka Vault Manager bawaan Obsidian.
 
 ---
 
-## 🛠️ Penggunaan & Commands
+## Penggunaan & Commands
 
 Buka **Command Palette** (Ctrl/Cmd + P) dan ketik `Multi-Vault Navigator` untuk melihat semua perintah yang tersedia:
 
@@ -50,7 +50,7 @@ Buka **Command Palette** (Ctrl/Cmd + P) dan ketik `Multi-Vault Navigator` untuk 
 
 ---
 
-## ⚙️ Pengaturan (Settings)
+## Pengaturan (Settings)
 
 Di menu **Settings > Multi-Vault Navigator**, kamu dapat mengatur:
 - **Daftar Vault**: Menghidupkan/mematikan indeks untuk vault tertentu, atau menghapus vault dari daftar.
@@ -61,7 +61,7 @@ Di menu **Settings > Multi-Vault Navigator**, kamu dapat mengatur:
 
 ---
 
-## 🔒 Keamanan & Privasi (Local-First)
+## Keamanan & Privasi (Local-First)
 
 Plugin ini 100% **Local-First**:
 - Tidak ada data yang dikirim ke internet atau *cloud*.
@@ -70,7 +70,7 @@ Plugin ini 100% **Local-First**:
 
 ---
 
-## 🏗️ Pemasangan (Installation)
+## Pemasangan (Installation)
 
 *(Untuk saat ini, plugin dipasang secara manual)*
 
