@@ -33,7 +33,7 @@ export class FileScanner {
       let entries;
       try {
         entries = await fs.promises.readdir(dir, { withFileTypes: true });
-      } catch (_e) {
+      } catch {
         return; // permission error or missing
       }
 
@@ -69,8 +69,8 @@ export class FileScanner {
               mtime: stats.mtimeMs,
               size: stats.size
             });
-          } catch (e) {
-            // ignore
+          } catch {
+            // ignore stat errors
           }
         }
       }

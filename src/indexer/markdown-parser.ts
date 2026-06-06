@@ -13,7 +13,7 @@ export class MarkdownParser {
     let content = '';
     try {
       content = await fs.promises.readFile(file.absolutePath, 'utf8');
-    } catch (_e) {
+    } catch {
       // return without content if read fails
     }
 
@@ -39,13 +39,13 @@ export class MarkdownParser {
     // Extract tags from frontmatter
     let frontmatterTags: string[] = [];
     if (frontmatter && Array.isArray(frontmatter.tags)) {
-      frontmatterTags = frontmatter.tags as string[];
+      frontmatterTags = frontmatter.tags;
     } else if (frontmatter && typeof frontmatter.tags === 'string') {
       frontmatterTags = (frontmatter.tags as string).split(',').map(t => t.trim());
     } else if (frontmatter && frontmatter.tag) {
        // support 'tag' singular
        if (Array.isArray(frontmatter.tag)) {
-         frontmatterTags = frontmatter.tag as string[];
+         frontmatterTags = frontmatter.tag;
        } else if (typeof frontmatter.tag === 'string') {
          frontmatterTags = (frontmatter.tag as string).split(',').map(t => t.trim());
        }

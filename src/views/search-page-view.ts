@@ -202,7 +202,7 @@ export class SearchPageView extends ItemView {
       }
 
       itemEl.addEventListener('click', () => {
-        this.fileOpener.openFile(file);
+        void this.fileOpener.openFile(file);
       });
       
       itemEl.oncontextmenu = async (e) => {

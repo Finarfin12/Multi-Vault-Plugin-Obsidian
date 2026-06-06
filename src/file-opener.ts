@@ -17,16 +17,16 @@ export class FileOpener {
     
     if (currentVaultId === file.vaultId) {
       // Same vault, open directly
-      this.app.workspace.openLinkText(file.relativePath, '', true);
+      await this.app.workspace.openLinkText(file.relativePath, '', true);
     } else {
       // Other vault, open in our custom read-only tab
       const leaf = this.app.workspace.getLeaf(true); // true = open in new tab
       await leaf.setViewState({ type: VIEW_TYPE_EXTERNAL_FILE, active: true });
       const view = leaf.view;
       if (view instanceof ExternalFileView) {
-         view.setFile(file);
+         await view.setFile(file);
       }
-      this.app.workspace.revealLeaf(leaf);
+      void this.app.workspace.revealLeaf(leaf);
     }
   }
 

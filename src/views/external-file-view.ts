@@ -42,7 +42,7 @@ export class ExternalFileView extends ItemView {
     this.file = file;
     try {
       this.content = fs.readFileSync(file.absolutePath, 'utf8');
-    } catch (_e) {
+    } catch {
       this.content = `> [!ERROR] Failed to read file from path: ${file.absolutePath}`;
     }
     void this.render();

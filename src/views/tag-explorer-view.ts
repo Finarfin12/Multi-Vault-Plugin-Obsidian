@@ -57,14 +57,16 @@ export class TagExplorerView extends ItemView {
        tagEl.createSpan({ text: `#${tag}`, cls: 'mvn-tag-name' });
        tagEl.createSpan({ text: `${count}`, cls: 'mvn-tag-count' });
        
-       tagEl.addEventListener('click', async () => {
-         const leaf = this.app.workspace.getLeaf(true);
-         await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-         const view = leaf.view;
-         if (view instanceof SearchPageView) {
-            view.setSearchQuery(`#${tag}`);
-         }
-         this.app.workspace.revealLeaf(leaf);
+       tagEl.addEventListener('click', () => {
+         void (async () => {
+           const leaf = this.app.workspace.getLeaf(true);
+           await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
+           const view = leaf.view;
+           if (view instanceof SearchPageView) {
+              view.setSearchQuery(`#${tag}`);
+           }
+           void this.app.workspace.revealLeaf(leaf);
+         })();
        });
     });
   }

@@ -61,7 +61,7 @@ export class VaultRegistry {
       if (!stats.isDirectory()) return false;
       const obsidianFolder = path.join(vaultPath, this.app.vault.configDir);
       return fs.existsSync(obsidianFolder) && fs.statSync(obsidianFolder).isDirectory();
-    } catch (_e) {
+    } catch {
       return false;
     }
   }

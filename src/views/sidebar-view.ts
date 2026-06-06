@@ -53,7 +53,7 @@ export class SidebarView extends ItemView {
              const el = pinnedSection.createDiv({ cls: 'mvn-cc-item' });
              el.createSpan({ text: file.vaultName, cls: 'mvn-cc-badge' });
              el.createSpan({ text: file.basename, cls: 'mvn-cc-title' });
-             el.onclick = () => this.fileOpener.openFile(file);
+             el.onclick = () => { void this.fileOpener.openFile(file); };
              
              el.oncontextmenu = async (e) => {
                 e.preventDefault();
@@ -88,7 +88,7 @@ export class SidebarView extends ItemView {
              const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SEARCH_PAGE);
              if (leaves.length > 0) {
                 const view = leaves[0].view as SearchPageView;
-                this.app.workspace.revealLeaf(leaves[0]);
+                void this.app.workspace.revealLeaf(leaves[0]);
                 view.setSearchQuery(ss.query);
              } else {
                 new Notice("Please open the Cross-Vault Command Center first.");

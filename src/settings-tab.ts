@@ -16,6 +16,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
     this.indexer = indexer;
   }
 
+  // eslint-disable-next-line
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
@@ -48,8 +49,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         )
         .addButton(button => {
           button.setButtonText("Remove");
-          // @ts-ignore
-          if (typeof button.setDestructive === 'function') button.setDestructive(); else button.setWarning();
+          button.setDestructive();
           return button.onClick(async () => {
              this.vaultRegistry.removeVault(vault.id);
              await this.plugin.saveSettings();
@@ -91,7 +91,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl).setName('Indexing Options').setHeading();
+    new Setting(containerEl).setName('Indexing').setHeading();
 
     new Setting(containerEl)
       .setName("Refresh Index")
@@ -146,7 +146,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
            
            window.clearTimeout(excludeTimeout);
            excludeTimeout = window.setTimeout(() => {
-             this.indexer.buildFullIndex(true).then(() => {
+            void this.indexer.rebuildIndexAsync().then(() => {
                this.plugin.refreshSearchEngine();
              }).catch(console.error);
            }, 1500);
@@ -155,18 +155,20 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
       .addButton(btn => btn
         .setButtonText("Select File/Folder")
         .onClick(() => {
-          new ExcludeSuggestModal(this.app, this.indexer, async (selectedItem) => {
-             const patterns = this.plugin.settings.indexOptions.globalExcludePatterns || [];
-             if (!patterns.includes(selectedItem)) {
-               patterns.push(selectedItem);
-               this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
-               await this.plugin.saveSettings();
-               this.display(); // Refresh the settings UI
-               
-               // Auto-refresh the index so the file immediately disappears from search
-               await this.indexer.buildFullIndex(true);
-               this.plugin.refreshSearchEngine();
-             }
+          new ExcludeSuggestModal(this.app, this.indexer, (selectedItem) => {
+             void (async () => {
+               const patterns = this.plugin.settings.indexOptions.globalExcludePatterns || [];
+               if (!patterns.includes(selectedItem)) {
+                 patterns.push(selectedItem);
+                 this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
+                 await this.plugin.saveSettings();
+                 this.display(); // Refresh the settings UI
+                 
+                 // Auto-refresh the index so the file immediately disappears from search
+                 await this.indexer.rebuildIndexAsync();
+                 this.plugin.refreshSearchEngine();
+               }
+             })();
           }).open();
         })
       );

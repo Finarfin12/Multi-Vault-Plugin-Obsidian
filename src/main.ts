@@ -174,7 +174,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
        const target = files.find(f => f.vaultId === vaultId && f.relativePath === filePath);
        
        if (target) {
-          this.fileOpener.openFile(target);
+          await this.fileOpener.openFile(target);
        } else {
           new Notice("Cross-vault file not found in index. Please refresh index.");
        }
@@ -262,7 +262,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     if (this.settings.indexOptions.autoRefreshOnStartup) {
        // Using setTimeout to not block Obsidian startup
        window.setTimeout(() => {
-         this.indexer.buildFullIndex(false).then(() => {
+         void this.indexer.rebuildIndexAsync().then(() => {
            this.refreshSearchEngine();
          }).catch(console.error);
        }, 5000);
@@ -274,7 +274,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData()) as Partial<MultiVaultSettings>);
   }
 
   async saveSettings() {

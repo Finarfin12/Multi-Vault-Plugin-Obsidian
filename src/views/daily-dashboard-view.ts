@@ -72,7 +72,7 @@ export class DailyDashboardView extends ItemView {
           item.createSpan({ text: file.basename, cls: 'mvn-daily-title' });
           
           item.addEventListener('click', () => {
-             this.fileOpener.openFile(file);
+             void this.fileOpener.openFile(file);
           });
        });
     });
