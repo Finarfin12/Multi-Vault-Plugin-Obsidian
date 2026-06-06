@@ -25,7 +25,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
       .setDesc('Vaults are automatically detected from Obsidian global settings upon plugin start. You can also manually add them below.')
       .setHeading();
 
-    containerEl.createEl('h3', { text: 'Configured Vaults' });
+    new Setting(containerEl).setName('Configured Vaults').setHeading();
 
     const vaults = this.vaultRegistry.getVaults();
     if (vaults.length === 0) {
@@ -57,7 +57,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         );
     }
 
-    containerEl.createEl('h3', { text: 'Add Manual Vault' });
+    new Setting(containerEl).setName('Add Manual Vault').setHeading();
 
     let newVaultPath = "";
     new Setting(containerEl)
@@ -90,7 +90,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl('h3', { text: 'Indexing Options' });
+    new Setting(containerEl).setName('Indexing Options').setHeading();
 
     new Setting(containerEl)
       .setName("Refresh Index")
@@ -120,7 +120,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Store Snippets in Cache")
-      .setDesc("Warning: If enabled, note previews from all vaults are saved to a local JSON file in your active vault. Disable this if you regularly push your active vault's .obsidian folder to public repos, as it may leak cross-vault contents.")
+      .setDesc("Warning: If enabled, note previews from all vaults are saved to a local JSON file in your active vault. Disable this if you regularly push your active vault's config folder to public repos, as it may leak cross-vault contents.")
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.indexOptions.storeSnippetsInCache !== false)
         .onChange(async (value) => {

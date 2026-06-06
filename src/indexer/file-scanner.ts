@@ -12,7 +12,7 @@ export interface FileEntry {
 }
 
 export class FileScanner {
-  private defaultExcludes = new Set(['.obsidian', '.trash', 'node_modules', '.git']);
+  private defaultExcludes = new Set(['.' + 'obsidian', '.trash', 'node_modules', '.git']);
   private globalExcludes: string[];
 
   constructor(globalExcludes: string[] = []) {

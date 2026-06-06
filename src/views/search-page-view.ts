@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, Notice, sanitizeHTMLToDom } from 'obsidian';
 import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
 import { IndexedFile } from '../types';
@@ -183,7 +183,7 @@ export class SearchPageView extends ItemView {
         const snippetEl = itemEl.createDiv({ cls: 'mvn-sp-snippet' });
         const matchTerms = Object.keys(result.match || {});
         const highlightTerms = [...new Set([...matchTerms, ...queryParts])];
-        snippetEl.innerHTML = this.getHighlightedSnippet(file.contentPreview, highlightTerms);
+        snippetEl.appendChild(sanitizeHTMLToDom(this.getHighlightedSnippet(file.contentPreview, highlightTerms)));
       }
 
       if (file.tags && file.tags.length > 0) {
