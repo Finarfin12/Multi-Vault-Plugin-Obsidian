@@ -360,8 +360,9 @@
 
 .mvn-cc-quick-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
   justify-content: center;
 }
 
@@ -371,8 +372,11 @@
   box-shadow: none;
   color: var(--text-muted);
   font-weight: 500;
-  padding: 6px 14px;
+  padding: 4px 10px;
+  font-size: 0.8em;
   border-radius: 6px;
+  height: auto;
+  transition: all 0.2s ease;
 }
 
 .mvn-cc-quick-actions button:hover {
