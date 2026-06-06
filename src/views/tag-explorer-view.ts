@@ -65,7 +65,7 @@ export class TagExplorerView extends ItemView {
            if (view instanceof SearchPageView) {
               view.setSearchQuery(`#${tag}`);
            }
-           void this.app.workspace.revealLeaf(leaf);
+            await this.app.workspace.revealLeaf(leaf);
          })();
        });
     });

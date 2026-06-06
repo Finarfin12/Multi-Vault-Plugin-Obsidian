@@ -148,13 +148,10 @@ export class SearchPageView extends ItemView {
       btnSave.createSpan({ text: 'Save this search' });
       btnSave.onclick = () => {
          new PromptModal(this.app, "Enter a name for this saved search:", query, (name) => {
-            if (name) {
-               this.plugin.settings.savedSearches.push({ id: Date.now().toString(), name, query });
-               this.plugin.saveSettings().then(() => {
-                 this.plugin.refreshSidebar();
-               }).catch(console.error);
-            }
-         }).open();
+             if (name) {
+                void this.saveSearch(name, query);
+             }
+          }).open();
       };
       return;
     }
@@ -169,10 +166,7 @@ export class SearchPageView extends ItemView {
     btnSave.onclick = () => {
        new PromptModal(this.app, "Enter a name for this saved search:", query, (name) => {
           if (name) {
-             this.plugin.settings.savedSearches.push({ id: Date.now().toString(), name, query });
-             this.plugin.saveSettings().then(() => {
-                this.plugin.refreshSidebar();
-             }).catch(console.error);
+             void this.saveSearch(name, query);
           }
        }).open();
     };
@@ -273,5 +267,11 @@ export class SearchPageView extends ItemView {
     }
 
     return prefix + escapedSnippet + suffix;
+  }
+
+  private async saveSearch(name: string, query: string): Promise<void> {
+    this.plugin.settings.savedSearches.push({ id: Date.now().toString(), name, query });
+    await this.plugin.saveSettings();
+    this.plugin.refreshSidebar();
   }
 }

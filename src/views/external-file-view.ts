@@ -107,10 +107,7 @@ export class ExternalFileView extends ItemView {
         const absPath = path.normalize(path.join(basePath, decodedSrc));
         
         // Security: Prevent path traversal outside the vault boundary
-        if (!absPath.startsWith(path.normalize(vaultRoot))) {
-           console.warn("Multi-Vault Navigator: Blocked image path traversal outside vault boundary.", absPath);
-           return;
-        }
+        if (!absPath.startsWith(path.normalize(vaultRoot))) return;
 
         const localUri = `app://local/${absPath.replace(/\\/g, '/')}`;
         img.src = localUri;

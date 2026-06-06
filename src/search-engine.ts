@@ -76,7 +76,7 @@ export class SearchEngine {
 
     let results = this.miniSearch.search(query, {
       filter: (result) => {
-        const file = this.fileMap.get(result.id as string);
+        const file = this.fileMap.get(String(result.id));
         if (!file) return false;
 
         if (options?.vaultId && file.vaultId !== options.vaultId) {
@@ -100,10 +100,10 @@ export class SearchEngine {
     }
 
     // Map back to MultiVaultSearchResult
-    return results.map(r => ({
-      ...r,
-      file: this.fileMap.get(r.id as string)!
-    })).filter(r => !!r.file);
+    return results.flatMap(r => {
+      const file = this.fileMap.get(String(r.id));
+      return file ? [{ ...r, file }] : [];
+    });
   }
 
   public getRecentFiles(limit: number = 50, vaultId?: string): IndexedFile[] {

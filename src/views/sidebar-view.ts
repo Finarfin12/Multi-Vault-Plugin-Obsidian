@@ -83,17 +83,19 @@ export class SidebarView extends ItemView {
           setIcon(iconEl, 'search');
           el.createSpan({ text: ss.name, cls: 'mvn-cc-title' });
           
-          el.onclick = () => {
-             // Find SearchPageView and set query
-             const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SEARCH_PAGE);
-             if (leaves.length > 0) {
-                const view = leaves[0].view as SearchPageView;
-                void this.app.workspace.revealLeaf(leaves[0]);
-                view.setSearchQuery(ss.query);
-             } else {
-                new Notice("Please open the Cross-Vault Command Center first.");
-             }
-          };
+           el.onclick = () => {
+             void (async () => {
+              // Find SearchPageView and set query
+              const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SEARCH_PAGE);
+              if (leaves.length > 0) {
+                 const view = leaves[0].view as SearchPageView;
+                 await this.app.workspace.revealLeaf(leaves[0]);
+                 view.setSearchQuery(ss.query);
+              } else {
+                 new Notice("Please open the Cross-Vault Command Center first.");
+              }
+             })();
+           };
           
           el.oncontextmenu = async (e) => {
              e.preventDefault();

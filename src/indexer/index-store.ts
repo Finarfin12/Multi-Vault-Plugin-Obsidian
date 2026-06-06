@@ -52,8 +52,8 @@ export class IndexStore {
           const cache = JSON.parse(content) as IndexCache;
           return cache.files || [];
         }
-      } catch (_e) {
-        console.error("Failed to load index cache", _e);
+      } catch {
+        return [];
       }
     }
     return [];
@@ -67,8 +67,8 @@ export class IndexStore {
       if (exists) {
         await this.app.vault.adapter.remove(filePath);
       }
-    } catch (e) {
-      console.error("Failed to clear index cache", e);
+    } catch {
+      return;
     }
   }
 

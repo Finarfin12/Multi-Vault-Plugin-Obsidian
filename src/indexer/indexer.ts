@@ -83,9 +83,9 @@ export class Indexer {
       if (showNotice) {
         new Notice(`Index built successfully! ${this.indexedFiles.length} files indexed across ${enabledVaults.length} vaults.`);
       }
-    } catch (e) {
-      console.error("Index build failed:", e);
-      if (showNotice) new Notice("Failed to build index. See console for details.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (showNotice) new Notice(`Failed to build index: ${message}`);
     } finally {
       this.isIndexing = false;
     }

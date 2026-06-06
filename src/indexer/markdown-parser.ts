@@ -22,34 +22,27 @@ export class MarkdownParser {
     const textContent = extracted.textContent;
     
     // Extract headings
-    const headings = [];
+    const headings: string[] = [];
     const headingRegex = /^#{1,6}\s+(.+)$/gm;
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = headingRegex.exec(textContent)) !== null) {
       headings.push(match[1].trim());
     }
 
     // Extract inline tags
-    const inlineTags = [];
+    const inlineTags: string[] = [];
     const tagRegex = /(?<=^|\s)#([a-zA-Z0-9_-]+)/g;
     while ((match = tagRegex.exec(textContent)) !== null) {
       inlineTags.push(match[1]);
     }
 
     // Extract tags from frontmatter
-    let frontmatterTags: string[] = [];
-    if (frontmatter && Array.isArray(frontmatter.tags)) {
-      frontmatterTags = frontmatter.tags;
-    } else if (frontmatter && typeof frontmatter.tags === 'string') {
-      frontmatterTags = (frontmatter.tags as string).split(',').map(t => t.trim());
-    } else if (frontmatter && frontmatter.tag) {
-       // support 'tag' singular
-       if (Array.isArray(frontmatter.tag)) {
-         frontmatterTags = frontmatter.tag;
-       } else if (typeof frontmatter.tag === 'string') {
-         frontmatterTags = (frontmatter.tag as string).split(',').map(t => t.trim());
-       }
-    }
+    const frontmatterTags = frontmatter
+      ? [
+        ...this.normalizeFrontmatterTags(frontmatter.tags),
+        ...this.normalizeFrontmatterTags(frontmatter.tag)
+      ]
+      : [];
 
     const tags = Array.from(new Set([...inlineTags, ...frontmatterTags]));
 
@@ -131,5 +124,23 @@ export class MarkdownParser {
       }
     }
     return result;
+  }
+
+  private normalizeFrontmatterTags(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .filter((item): item is string => typeof item === 'string')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    return [];
   }
 }

@@ -75,7 +75,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-        void this.app.workspace.revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -85,7 +85,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_TAG_EXPLORER, active: true });
-        void this.app.workspace.revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -95,7 +95,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_DAILY_DASHBOARD, active: true });
-        void this.app.workspace.revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -255,16 +255,14 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.addRibbonIcon('search', 'Multi-Vault Navigator', async () => {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-      void this.app.workspace.revealLeaf(leaf);
+      await this.app.workspace.revealLeaf(leaf);
     });
 
     // Auto refresh index if needed (in a realistic app we would probably do it lazily or on a timer)
     if (this.settings.indexOptions.autoRefreshOnStartup) {
        // Using setTimeout to not block Obsidian startup
        window.setTimeout(() => {
-         void this.indexer.buildFullIndex(false).then(() => {
-           this.refreshSearchEngine();
-         }).catch(console.error);
+         void this.refreshIndexInBackground();
        }, 5000);
     }
   }
@@ -303,10 +301,20 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       await leaf?.setViewState({ type: VIEW_TYPE_SIDEBAR, active: true });
     }
     
-    if (leaf) void workspace.revealLeaf(leaf);
+    if (leaf) await workspace.revealLeaf(leaf);
   }
 
   refreshSearchEngine() {
     this.searchEngine.indexFiles(this.indexer.getIndexedFiles());
+  }
+
+  private async refreshIndexInBackground(): Promise<void> {
+    try {
+      await this.indexer.buildFullIndex(false);
+      this.refreshSearchEngine();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      new Notice(`Failed to refresh cross-vault index: ${message}`);
+    }
   }
 }

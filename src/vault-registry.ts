@@ -129,8 +129,8 @@ export class VaultRegistry {
           }
         }
       }
-    } catch (_e) {
-      console.error("Failed to parse global obsidian.json", _e);
+    } catch {
+      return;
     }
   }
 
