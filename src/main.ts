@@ -18,7 +18,7 @@ import { VIEW_TYPE_SIDEBAR, SidebarView } from './views/sidebar-view';
 import { Notice, WorkspaceLeaf } from 'obsidian';
 
 export default class MultiVaultNavigatorPlugin extends Plugin {
-  settings: MultiVaultSettings;
+  settings: MultiVaultSettings = Object.assign({}, DEFAULT_SETTINGS);
   vaultRegistry: VaultRegistry;
   indexer: Indexer;
   searchEngine: SearchEngine;
