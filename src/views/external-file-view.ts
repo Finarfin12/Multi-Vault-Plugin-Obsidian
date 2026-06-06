@@ -96,6 +96,7 @@ export class ExternalFileView extends ItemView {
   private resolveMediaAndLinks(container: HTMLElement) {
     if (!this.file) return;
     const basePath = path.dirname(this.file.absolutePath);
+    const vaultRoot = this.file.absolutePath.substring(0, this.file.absolutePath.length - this.file.relativePath.length);
 
     // 1. Resolve Images
     const imgs = container.querySelectorAll('img');
@@ -103,7 +104,14 @@ export class ExternalFileView extends ItemView {
       const src = img.getAttribute('src');
       if (src && !src.startsWith('http') && !src.startsWith('app://') && !src.startsWith('data:')) {
         const decodedSrc = decodeURIComponent(src);
-        const absPath = path.join(basePath, decodedSrc);
+        const absPath = path.normalize(path.join(basePath, decodedSrc));
+        
+        // Security: Prevent path traversal outside the vault boundary
+        if (!absPath.startsWith(path.normalize(vaultRoot))) {
+           console.warn("Multi-Vault Navigator: Blocked image path traversal outside vault boundary.", absPath);
+           return;
+        }
+
         const localUri = `app://local/${absPath.replace(/\\/g, '/')}`;
         img.src = localUri;
       }

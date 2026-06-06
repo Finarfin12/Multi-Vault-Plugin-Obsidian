@@ -16,6 +16,7 @@ export class Indexer {
 
   private indexedFiles: IndexedFile[] = [];
   private isIndexing: boolean = false;
+  private lastIndexTime: number = 0;
 
   constructor(app: App, vaultRegistry: VaultRegistry, settings: MultiVaultSettings) {
     this.app = app;
@@ -37,6 +38,12 @@ export class Indexer {
   }
 
   public async buildFullIndex(showNotice = false): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastIndexTime < 15000) {
+      if (showNotice) new Notice("Indexing is on cooldown. Please wait a few seconds.");
+      return;
+    }
+
     if (this.isIndexing) {
       if (showNotice) new Notice("Indexing is already in progress...");
       return;
@@ -68,9 +75,10 @@ export class Indexer {
       }
 
       this.indexedFiles = allFiles;
+      this.lastIndexTime = Date.now();
       
       // Save cache
-      await this.store.saveIndex(this.indexedFiles);
+      await this.store.saveIndex(this.indexedFiles, this.settings.indexOptions.storeSnippetsInCache !== false);
 
       if (showNotice) {
         new Notice(`Index built successfully! ${this.indexedFiles.length} files indexed across ${enabledVaults.length} vaults.`);

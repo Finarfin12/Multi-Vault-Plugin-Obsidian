@@ -9,11 +9,17 @@ export class IndexStore {
     this.app = app;
   }
 
-  public async saveIndex(files: IndexedFile[]): Promise<void> {
+  public async saveIndex(files: IndexedFile[], storeSnippets: boolean = true): Promise<void> {
+    const filesToCache = storeSnippets ? files : files.map(f => {
+      const copy = { ...f };
+      delete copy.contentPreview;
+      return copy;
+    });
+
     const cache: IndexCache = {
       version: 1,
       generatedAt: new Date().toISOString(),
-      files
+      files: filesToCache
     };
 
     const dataPath = this.getPluginDataPath();

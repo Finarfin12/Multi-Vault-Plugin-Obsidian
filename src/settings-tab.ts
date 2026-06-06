@@ -118,6 +118,18 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         })
       );
 
+    new Setting(containerEl)
+      .setName("Store Snippets in Cache")
+      .setDesc("Warning: If enabled, note previews from all vaults are saved to a local JSON file in your active vault. Disable this if you regularly push your active vault's .obsidian folder to public repos, as it may leak cross-vault contents.")
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.indexOptions.storeSnippetsInCache !== false)
+        .onChange(async (value) => {
+           this.plugin.settings.indexOptions.storeSnippetsInCache = value;
+           await this.plugin.saveSettings();
+           await this.indexer.buildFullIndex(true);
+        })
+      );
+
     let excludeTimeout: any;
 
     new Setting(containerEl)

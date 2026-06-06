@@ -117,7 +117,14 @@ export class FileOperationModal extends Modal {
           const targetVault = this.vaultRegistry.getVaults().find(v => v.id === this.targetVaultId);
           if (!targetVault) return;
 
-          const sourcePath = (this.app.vault.adapter as any).getBasePath() + '/' + activeFile.path;
+          const adapter = this.app.vault.adapter;
+          let sourcePath = '';
+          if ('getBasePath' in adapter && typeof adapter.getBasePath === 'function') {
+             sourcePath = path.join(adapter.getBasePath(), activeFile.path);
+          } else {
+             new Notice("Error: Adapter doesn't support getBasePath().");
+             return;
+          }
           const targetPath = path.join(targetVault.path, activeFile.name);
 
           try {

@@ -29,6 +29,7 @@ export interface IndexOptions {
   maxPreviewChars: number;
   autoRefreshOnStartup: boolean;
   globalExcludePatterns: string[];
+  storeSnippetsInCache: boolean;
 }
 
 export interface MultiVaultSettings {
@@ -49,7 +50,8 @@ export const DEFAULT_SETTINGS: MultiVaultSettings = {
   indexOptions: {
     maxPreviewChars: 1000,
     autoRefreshOnStartup: true,
-    globalExcludePatterns: []
+    globalExcludePatterns: [],
+    storeSnippetsInCache: true
   },
   savedSearches: [],
   pinnedFiles: []
