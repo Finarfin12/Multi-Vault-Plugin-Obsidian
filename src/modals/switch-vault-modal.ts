@@ -32,6 +32,6 @@ export class SwitchVaultModal extends FuzzySuggestModal<VaultConfig> {
   }
 
   onChooseItem(vault: VaultConfig, evt: MouseEvent | KeyboardEvent) {
-    this.fileOpener.openVault(vault);
+    void this.fileOpener.openVault(vault);
   }
 }

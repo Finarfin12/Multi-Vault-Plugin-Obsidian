@@ -42,10 +42,10 @@ export class ExternalFileView extends ItemView {
     this.file = file;
     try {
       this.content = fs.readFileSync(file.absolutePath, 'utf8');
-    } catch (e) {
+    } catch (_e) {
       this.content = `> [!ERROR] Failed to read file from path: ${file.absolutePath}`;
     }
-    this.render();
+    void this.render();
   }
 
   private async render() {
@@ -87,7 +87,7 @@ export class ExternalFileView extends ItemView {
 
     const contentDiv = sizerInner.createDiv();
     // Render the markdown content
-    await MarkdownRenderer.renderMarkdown(this.content, contentDiv, '', this);
+    await MarkdownRenderer.render(this.app, this.content, contentDiv, '', this);
     
     // Smart Image & Link Resolver
     this.resolveMediaAndLinks(contentDiv);
@@ -129,7 +129,7 @@ export class ExternalFileView extends ItemView {
         // Kita menggunakan pencarian judul yang akurat (prefix/fuzzy)
         const results = this.searchEngine.search(href.replace('.md', ''), { limit: 5 });
         if (results.length > 0) {
-           this.fileOpener.openFile(results[0].file);
+           void this.fileOpener.openFile(results[0].file);
         } else {
            // Fallback if not found
            new Notice(`File "${href}" not found in any indexed vault.`);

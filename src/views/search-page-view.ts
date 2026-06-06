@@ -1,11 +1,17 @@
 import { ItemView, WorkspaceLeaf, setIcon, Notice, sanitizeHTMLToDom } from 'obsidian';
 import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
-import { IndexedFile } from '../types';
+
 import MultiVaultNavigatorPlugin from '../main';
 import { PromptModal } from '../modals/prompt-modal';
 
 export const VIEW_TYPE_SEARCH_PAGE = "mvn-search-page-view";
+
+interface AppWithCommands {
+    commands: {
+        executeCommandById(id: string): void;
+    };
+}
 
 export class SearchPageView extends ItemView {
   private plugin: MultiVaultNavigatorPlugin;
@@ -59,37 +65,37 @@ export class SearchPageView extends ItemView {
     const btnSearchAll = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnSearchAll.createSpan(), 'search');
     btnSearchAll.createSpan({ text: 'Search Vaults' });
-    btnSearchAll.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-search');
+    btnSearchAll.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-search');
 
     const btnRecent = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnRecent.createSpan(), 'clock');
     btnRecent.createSpan({ text: 'Recent Files' });
-    btnRecent.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-recent');
+    btnRecent.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-recent');
     
     const btnSwitch = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnSwitch.createSpan(), 'folder-open');
     btnSwitch.createSpan({ text: 'Switch Vault' });
-    btnSwitch.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-switch');
+    btnSwitch.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-switch');
 
     const btnTags = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnTags.createSpan(), 'tags');
     btnTags.createSpan({ text: 'Tag Explorer' });
-    btnTags.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-tag-explorer');
+    btnTags.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-tag-explorer');
 
     const btnDaily = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnDaily.createSpan(), 'calendar-days');
     btnDaily.createSpan({ text: 'Daily Notes' });
-    btnDaily.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-daily-dashboard');
+    btnDaily.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-daily-dashboard');
 
     const btnDupes = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnDupes.createSpan(), 'copy');
     btnDupes.createSpan({ text: 'Duplicates' });
-    btnDupes.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-duplicates');
+    btnDupes.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-duplicates');
 
     const btnMove = quickActions.createEl('button', { cls: 'mvn-btn-icon' });
     setIcon(btnMove.createSpan(), 'arrow-right-left');
     btnMove.createSpan({ text: 'Move/Copy' });
-    btnMove.onclick = () => (this.app as any).commands.executeCommandById('multi-vault-navigator:multi-vault-move-copy');
+    btnMove.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-move-copy');
 
     this.resultsContainerEl = mainEl.createDiv({ cls: 'mvn-sp-results' });
 
@@ -140,12 +146,13 @@ export class SearchPageView extends ItemView {
       const btnSave = emptyState.createEl('button', { cls: 'mvn-btn-icon' });
       setIcon(btnSave.createSpan(), 'save');
       btnSave.createSpan({ text: 'Save this search' });
-      btnSave.onclick = async () => {
-         new PromptModal(this.app, "Enter a name for this saved search:", query, async (name) => {
+      btnSave.onclick = () => {
+         new PromptModal(this.app, "Enter a name for this saved search:", query, (name) => {
             if (name) {
                this.plugin.settings.savedSearches.push({ id: Date.now().toString(), name, query });
-               await this.plugin.saveSettings();
-               this.plugin.refreshSidebar();
+               this.plugin.saveSettings().then(() => {
+                 this.plugin.refreshSidebar();
+               }).catch(console.error);
             }
          }).open();
       };
@@ -159,12 +166,13 @@ export class SearchPageView extends ItemView {
     const btnSave = resultHeader.createEl('button', { cls: 'mvn-btn-small mvn-btn-icon' });
     setIcon(btnSave.createSpan(), 'save');
     btnSave.createSpan({ text: 'Save search' });
-    btnSave.onclick = async () => {
-       new PromptModal(this.app, "Enter a name for this saved search:", query, async (name) => {
+    btnSave.onclick = () => {
+       new PromptModal(this.app, "Enter a name for this saved search:", query, (name) => {
           if (name) {
              this.plugin.settings.savedSearches.push({ id: Date.now().toString(), name, query });
-             await this.plugin.saveSettings();
-             this.plugin.refreshSidebar();
+             this.plugin.saveSettings().then(() => {
+                this.plugin.refreshSidebar();
+             }).catch(console.error);
           }
        }).open();
     };

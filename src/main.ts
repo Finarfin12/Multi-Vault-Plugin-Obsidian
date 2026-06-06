@@ -75,7 +75,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-        this.app.workspace.revealLeaf(leaf);
+        void this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -85,7 +85,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_TAG_EXPLORER, active: true });
-        this.app.workspace.revealLeaf(leaf);
+        void this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -95,7 +95,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_DAILY_DASHBOARD, active: true });
-        this.app.workspace.revealLeaf(leaf);
+        void this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -182,13 +182,13 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     // Register Natural Cross-Vault Links Post Processor
     this.registerMarkdownPostProcessor((element, context) => {
-       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+       const walker = activeDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
        let node;
        const nodesToReplace: { node: Node, parent: Node, replacements: Node[] }[] = [];
 
        const regex = /\[\[(.*?)::(.*?)\]\]/g;
 
-       while (node = walker.nextNode()) {
+       while ((node = walker.nextNode()) !== null) {
           const text = node.textContent || '';
           let match;
           let lastIndex = 0;
@@ -201,10 +201,10 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
              const noteName = match[2].trim();
              
              if (match.index > lastIndex) {
-                replacements.push(document.createTextNode(text.substring(lastIndex, match.index)));
+                replacements.push(activeDocument.createTextNode(text.substring(lastIndex, match.index)));
              }
              
-             const a = document.createElement('a');
+             const a = activeDocument.createElement('a');
              a.addClass('internal-link');
              a.addClass('mvn-cross-vault-link');
              a.innerText = noteName;
@@ -213,7 +213,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
                 const files = this.indexer.getIndexedFiles();
                 const target = files.find(f => f.vaultName.toLowerCase() === vaultName.toLowerCase() && f.basename.toLowerCase() === noteName.toLowerCase());
                 if (target) {
-                   this.fileOpener.openFile(target);
+                   void this.fileOpener.openFile(target);
                 } else {
                    new Notice(`File "${noteName}" not found in vault "${vaultName}".`);
                 }
@@ -234,7 +234,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
           if (found) {
              if (lastIndex < text.length) {
-                replacements.push(document.createTextNode(text.substring(lastIndex)));
+                replacements.push(activeDocument.createTextNode(text.substring(lastIndex)));
              }
              if (node.parentNode) {
                 nodesToReplace.push({ node, parent: node.parentNode, replacements });
@@ -255,15 +255,16 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.addRibbonIcon('search', 'Multi-Vault Navigator', async () => {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-      this.app.workspace.revealLeaf(leaf);
+      void this.app.workspace.revealLeaf(leaf);
     });
 
     // Auto refresh index if needed (in a realistic app we would probably do it lazily or on a timer)
     if (this.settings.indexOptions.autoRefreshOnStartup) {
        // Using setTimeout to not block Obsidian startup
-       setTimeout(async () => {
-         await this.indexer.buildFullIndex(false);
-         this.refreshSearchEngine();
+       window.setTimeout(() => {
+         this.indexer.buildFullIndex(false).then(() => {
+           this.refreshSearchEngine();
+         }).catch(console.error);
        }, 5000);
     }
   }
@@ -302,7 +303,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       await leaf?.setViewState({ type: VIEW_TYPE_SIDEBAR, active: true });
     }
     
-    if (leaf) workspace.revealLeaf(leaf);
+    if (leaf) void workspace.revealLeaf(leaf);
   }
 
   refreshSearchEngine() {

@@ -13,11 +13,13 @@ export class MarkdownParser {
     let content = '';
     try {
       content = await fs.promises.readFile(file.absolutePath, 'utf8');
-    } catch (e) {
+    } catch (_e) {
       // return without content if read fails
     }
 
-    const { frontmatter, textContent } = this.extractFrontmatter(content);
+    const extracted = this.extractFrontmatter(content);
+    const frontmatter = extracted.frontmatter;
+    const textContent = extracted.textContent;
     
     // Extract headings
     const headings = [];
@@ -29,7 +31,7 @@ export class MarkdownParser {
 
     // Extract inline tags
     const inlineTags = [];
-    const tagRegex = /(?<=^|\s)#([a-zA-Z0-9_\-]+)/g;
+    const tagRegex = /(?<=^|\s)#([a-zA-Z0-9_-]+)/g;
     while ((match = tagRegex.exec(textContent)) !== null) {
       inlineTags.push(match[1]);
     }
@@ -75,10 +77,10 @@ export class MarkdownParser {
     };
   }
 
-  private extractFrontmatter(content: string): { frontmatter: any, textContent: string } {
+  private extractFrontmatter(content: string): { frontmatter: Record<string, unknown> | undefined, textContent: string } {
     const yamlRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
     const match = content.match(yamlRegex);
-    let frontmatter: any = null;
+    let frontmatter: Record<string, unknown> | undefined = undefined;
     let textContent = content;
 
     if (match) {

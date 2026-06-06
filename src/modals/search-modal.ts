@@ -38,6 +38,6 @@ export class SearchModal extends SuggestModal<IndexedFile> {
   }
 
   onChooseSuggestion(file: IndexedFile, evt: MouseEvent | KeyboardEvent) {
-    this.fileOpener.openFile(file);
+    void this.fileOpener.openFile(file);
   }
 }

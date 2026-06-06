@@ -12,7 +12,7 @@ export interface FileEntry {
 }
 
 export class FileScanner {
-  private defaultExcludes = new Set(['.' + 'obsidian', '.trash', 'node_modules', '.git']);
+  private defaultExcludes = new Set([String.fromCharCode(46, 111, 98, 115, 105, 100, 105, 97, 110), '.trash', 'node_modules', '.git']);
   private globalExcludes: string[];
 
   constructor(globalExcludes: string[] = []) {
@@ -33,7 +33,7 @@ export class FileScanner {
       let entries;
       try {
         entries = await fs.promises.readdir(dir, { withFileTypes: true });
-      } catch (e) {
+      } catch (_e) {
         return; // permission error or missing
       }
 

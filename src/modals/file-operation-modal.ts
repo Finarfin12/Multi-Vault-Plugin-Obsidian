@@ -47,7 +47,7 @@ export class FileOperationModal extends Modal {
     const fileTags: string[] = [];
     if (fileCache?.tags) fileTags.push(...fileCache.tags.map(t => t.tag.replace('#', '').toLowerCase()));
     if (fileCache?.frontmatter?.tags) {
-       const fmTags = fileCache.frontmatter.tags;
+       const fmTags: unknown = fileCache.frontmatter.tags;
        if (Array.isArray(fmTags)) fileTags.push(...fmTags.map(t => typeof t === 'string' ? t.toLowerCase() : String(t)));
        else if (typeof fmTags === 'string') fileTags.push(...fmTags.split(',').map(t => t.trim().toLowerCase()));
     }
@@ -119,8 +119,8 @@ export class FileOperationModal extends Modal {
 
           const adapter = this.app.vault.adapter;
           let sourcePath = '';
-          if ('getBasePath' in adapter && typeof adapter.getBasePath === 'function') {
-             sourcePath = path.join(adapter.getBasePath(), activeFile.path);
+          if ('getBasePath' in adapter && typeof (adapter as any).getBasePath === 'function') {
+             sourcePath = path.join((adapter as {getBasePath: () => string}).getBasePath(), activeFile.path);
           } else {
              new Notice("Error: Adapter doesn't support getBasePath().");
              return;
@@ -138,16 +138,17 @@ export class FileOperationModal extends Modal {
                new Notice(`Copied to ${targetVault.name}`);
             } else {
                fs.copyFileSync(sourcePath, targetPath); // safe move
-               await this.app.vault.trash(activeFile, true); 
+               await this.app.fileManager.trashFile(activeFile);
                new Notice(`Moved to ${targetVault.name}`);
             }
             
             // Trigger background re-index so search is updated
-            this.indexer.buildFullIndex(true);
+            void this.indexer.buildFullIndex(true);
             
             this.close();
-          } catch (e: any) {
-            new Notice(`Failed to ${this.operation} file: ${e.message}`);
+          } catch (_e: unknown) {
+            const msg = _e instanceof Error ? _e.message : String(_e);
+            new Notice(`Failed to ${this.operation} file: ${msg}`);
           }
         })
       );

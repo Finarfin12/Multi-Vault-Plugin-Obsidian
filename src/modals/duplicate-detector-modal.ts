@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal } from 'obsidian';
 import { Indexer } from '../indexer/indexer';
 import { IndexedFile } from '../types';
 import { FileOpener } from '../file-opener';
@@ -45,10 +45,9 @@ export class DuplicateDetectorModal extends Modal {
           const item = group.createDiv({ cls: 'mvn-duplicate-item' });
           item.createSpan({ text: file.vaultName, cls: 'mvn-duplicate-vault-badge' });
           item.createSpan({ text: file.relativePath, cls: 'mvn-duplicate-path' });
-          
           const btnOpen = item.createEl('button', { text: 'Open' });
           btnOpen.onclick = () => {
-             this.fileOpener.openFile(file);
+             void this.fileOpener.openFile(file);
           };
        });
     });

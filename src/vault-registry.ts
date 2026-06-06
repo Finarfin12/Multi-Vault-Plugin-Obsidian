@@ -61,7 +61,7 @@ export class VaultRegistry {
       if (!stats.isDirectory()) return false;
       const obsidianFolder = path.join(vaultPath, this.app.vault.configDir);
       return fs.existsSync(obsidianFolder) && fs.statSync(obsidianFolder).isDirectory();
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }
@@ -104,7 +104,10 @@ export class VaultRegistry {
 
     try {
       const data = fs.readFileSync(obsidianJsonPath, 'utf8');
-      const json = JSON.parse(data);
+      interface ObsidianJson {
+        vaults?: Record<string, { path?: string }>;
+      }
+      const json = JSON.parse(data) as ObsidianJson;
       if (json && json.vaults) {
         for (const key in json.vaults) {
           const vaultInfo = json.vaults[key];
@@ -126,8 +129,8 @@ export class VaultRegistry {
           }
         }
       }
-    } catch (e) {
-      console.error("Failed to parse global obsidian.json", e);
+    } catch (_e) {
+      console.error("Failed to parse global obsidian.json", _e);
     }
   }
 

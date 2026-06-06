@@ -49,11 +49,11 @@ export class IndexStore {
         const exists = await this.app.vault.adapter.exists(filePath);
         if (exists) {
           const content = await this.app.vault.adapter.read(filePath);
-          const cache: IndexCache = JSON.parse(content);
+          const cache = JSON.parse(content) as IndexCache;
           return cache.files || [];
         }
-      } catch (e) {
-        console.error("Failed to load index cache", e);
+      } catch (_e) {
+        console.error("Failed to load index cache", _e);
       }
     }
     return [];

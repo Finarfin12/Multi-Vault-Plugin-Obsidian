@@ -46,15 +46,16 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
         )
-        .addButton(button => button
-          .setButtonText("Remove")
-          .setWarning()
-          .onClick(async () => {
+        .addButton(button => {
+          button.setButtonText("Remove");
+          // @ts-ignore
+          if (typeof button.setDestructive === 'function') button.setDestructive(); else button.setWarning();
+          return button.onClick(async () => {
              this.vaultRegistry.removeVault(vault.id);
              await this.plugin.saveSettings();
              this.display();
-          })
-        );
+          });
+        });
     }
 
     new Setting(containerEl).setName('Add Manual Vault').setHeading();
@@ -130,7 +131,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         })
       );
 
-    let excludeTimeout: any;
+    let excludeTimeout: number;
 
     new Setting(containerEl)
       .setName("Global Exclude Patterns")
@@ -143,10 +144,11 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
            this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
            await this.plugin.saveSettings();
            
-           clearTimeout(excludeTimeout);
-           excludeTimeout = setTimeout(async () => {
-             await this.indexer.buildFullIndex(true);
-             this.plugin.refreshSearchEngine();
+           window.clearTimeout(excludeTimeout);
+           excludeTimeout = window.setTimeout(() => {
+             this.indexer.buildFullIndex(true).then(() => {
+               this.plugin.refreshSearchEngine();
+             }).catch(console.error);
            }, 1500);
         })
       )

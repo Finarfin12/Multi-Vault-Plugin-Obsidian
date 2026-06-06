@@ -69,7 +69,7 @@ export class Indexer {
           
           fileCount++;
           if (fileCount % 50 === 0) {
-             await new Promise(resolve => setTimeout(resolve, 0)); // yield to UI
+             await new Promise(resolve => window.setTimeout(resolve, 0)); // yield to UI
           }
         }
       }
