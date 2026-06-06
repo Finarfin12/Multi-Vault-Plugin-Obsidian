@@ -1,5 +1,7 @@
 # Multi-Vault Navigator
 
+<img width="1920" height="1140" alt="Screenshot 2026-06-06 092829" src="https://github.com/user-attachments/assets/cf9b2071-9aa0-4f73-9107-07e2e20ddb42" />
+
 **Multi-Vault Navigator** is a local-first Obsidian plugin designed to bridge the gap between multiple vaults. If you use multiple vaults (e.g., work vault, personal vault, and writing vault), this plugin allows you to search, view, and switch between vaults as if they were all in one unified workspace.
 
 [Baca dalam Bahasa Indonesia](README_id.md)
@@ -17,6 +19,8 @@ To comply with the [Obsidian Developer Policies](https://docs.obsidian.md/Plugin
 ---
 
 ## Key Features
+
+<img width="1920" height="1140" alt="Screenshot 2026-06-06 092905" src="https://github.com/user-attachments/assets/45b9cbfe-ea17-4478-bf35-847c16deffbf" />
 
 ### 1. Cross-Vault Command Center
 Instead of remembering which vault a note is saved in, use the Command Center dashboard.
