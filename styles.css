@@ -350,7 +350,7 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.mvn-btn-small {
+button.mvn-btn-small {
   padding: 4px 10px;
   font-size: 0.8em;
   height: auto;
@@ -363,7 +363,7 @@
   transition: all 0.2s ease;
 }
 
-.mvn-btn-small:hover {
+button.mvn-btn-small:hover {
   background-color: var(--interactive-accent);
   border-color: var(--interactive-accent);
   color: var(--text-on-accent);
