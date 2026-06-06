@@ -2,6 +2,21 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.1.0] - 2026-06-06 (Feature V0.2 & Security Audit)
+### Added
+- **Tag Filter**: Type `#tag` directly inside the Command Center search bar to filter results exclusively by metadata/inline tags.
+- **Better Snippets (Google-style)**: Search results now dynamically extract and center the text snippet precisely around your keyword, complete with yellow `<mark>` highlighting.
+- **Tag Pills**: Note tags are now beautifully rendered as pill elements below each search result snippet.
+- **Privacy Controls**: Added `Store Snippets in Cache` toggle to the settings, allowing high-privacy vaults to scrub sensitive content from the search cache file.
+
+### Changed
+- **Rate Limiting**: Added a 15-second cooldown to the `Refresh Index` button to prevent accidental UI freezing and I/O spikes.
+- **UI Refresh**: Centered the Command Center layout (`max-width: 800px`) and refined the Quick Action buttons to look more minimalist and less overwhelming on large screens.
+
+### Fixed
+- **Path Traversal Mitigation**: Implemented strict boundaries when resolving local `app://` image URIs, blocking malicious `../` requests from escaping the vault root.
+- **Type Safety**: Removed dangerous type casts on Obsidian's internal `adapter.getBasePath()` to prevent future breaking changes.
+
 ## [2.0.1] - 2026-06-05 (Stabilize Patch)
 ### Added
 - Native Right Sidebar support for **Pinned Notes** & **Saved Searches**.

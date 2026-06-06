@@ -1,367 +1,301 @@
-# Analisis Keamanan — Multi-Vault Navigator v2.0.1
+# Analisis Keamanan #2 — Perbaikan & Delta dari v2.0.1
 
-> Plugin Obsidian untuk navigasi, pencarian, dan akses file lintas vault.
-> **Author**: Hir43th | **License**: MIT | **Platform**: Desktop-only (Electron + Node.js)
-> **Dependency runtime**: MiniSearch v6.3.0
-
----
-
-## Ringkasan Eksekutif
-
-**Plugin ini 100% local-first — tidak ada koneksi jaringan sama sekali.** Ini adalah fondasi keamanan paling signifikan karena menghilangkan seluruh kelas serangan: data exfiltration, API injection, third-party tracking, MITM, dan supply chain runtime compromise.
-
-Setelah menganalisis seluruh 15 file source code, saya menilai keamanan plugin ini: **7.5/10** — aman untuk digunakan dengan beberapa catatan yang perlu diwaspadai.
+> Plugin: Multi-Vault Navigator | Author: Hir43th
+> Tanggal: 2026-06-03
+> Scope: Membandingkan state code sekarang vs temuan analisis pertama
 
 ---
 
-## Arsitektur Keamanan
+## Ringkasan: Apa yang Sudah Diperbaiki?
 
-### Trust Boundary
+Dari 4 temuan keamanan di analisis pertama, **3 sudah diperbaiki, 1 dimitigasi**. Sangat baik.
 
-```
-┌──────────────────────────────────────────────────────┐
-│                   Obsidian App (Electron)            │
-│  ┌────────────┐  ┌────────────┐  ┌───────────────┐  │
-│  │ Vault A    │  │ Vault B    │  │ Vault C       │  │
-│  │ (.md files)│  │ (.md files)│  │ (.md files)   │  │
-│  └─────┬──────┘  └─────┬──────┘  └───────┬───────┘  │
-│        │               │                  │          │
-│        └───────────────┼──────────────────┘          │
-│                        │ fs.readFileSync()           │
-│              ┌─────────▼──────────┐                  │
-│              │  Multi-Vault       │                  │
-│              │  Navigator Plugin  │                  │
-│              │                    │                  │
-│              │  ┌──────────────┐  │                  │
-│              │  │ Index Cache  │  │ ← .json di disk  │
-│              │  │ (content     │  │                  │
-│              │  │  previews)   │  │                  │
-│              │  └──────────────┘  │                  │
-│              │                    │                  │
-│              │  No network calls  │ ← ZERO           │
-│              └────────────────────┘                  │
-│                                                      │
-│  Trust boundary: plugin hanya baca/tulis file system │
-│  dalam path vault yang sudah dikonfigurasi.          │
-└──────────────────────────────────────────────────────┘
+---
+
+## Delta Perbaikan Per Temuan
+
+### 🔴 Temuan #1: Index Cache Data Leakage → ✅ FIXED
+
+**State sebelumnya:**
+```typescript
+// index-store.ts — semua file disimpan dengan contentPreview
+await this.app.vault.adapter.write(filePath, JSON.stringify(cache));
 ```
 
----
+**State sekarang:** Tiga lapis perbaikan.
 
-## Analisis Per Vektor Serangan
+**Lapis 1 — `IndexStore` support conditional snippet storage:**
+```typescript
+// index-store.ts:15 — parameter storeSnippets
+public async saveIndex(files: IndexedFile[], storeSnippets: boolean = true): Promise<void> {
+    const filesToCache = storeSnippets ? files : files.map(f => {
+        const copy = { ...f };
+        delete copy.contentPreview;
+        return copy;
+    });
+```
 
-### 1. File System Access — ✅ Aman (dengan catatan)
+**Lapis 2 — `Indexer` membaca setting `storeSnippetsInCache`:**
+```typescript
+// indexer.ts:79
+await this.store.saveIndex(this.indexedFiles, this.settings.indexOptions.storeSnippetsInCache !== false);
+```
 
-**Mekanisme**: Plugin menggunakan `fs.readFileSync()` dan `fs.readdir()` untuk membaca vault lain.
+**Lapis 3 — UI toggle di Settings dengan warning eksplisit:**
+```typescript
+// settings-tab.ts — baris baru
+new Setting(containerEl)
+    .setName("Store Snippets in Cache")
+    .setDesc("Warning: If enabled, note previews from all vaults are saved to a local JSON file in your active vault. 
+              Disable this if you regularly push your active vault's .obsidian folder to public repos, 
+              as it may leak cross-vault contents.")
+    .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.indexOptions.storeSnippetsInCache !== false)
+        // ...
+    )
+```
 
-**Analisis**:
-- Vault path bersumber dari dua tempat:
-  - `obsidian.json` — file konfigurasi global Obsidian, ditulis oleh Obsidian sendiri, **trusted**
-  - Manual input user di Settings — divalidasi oleh `validateVaultPath()` yang mengecek: (a) path adalah directory, (b) ada subdirectory `.obsidian`
-- Tidak ada path traversal dari user input karena semua path berasal dari konfigurasi yang sudah di-allow
-- Semua operasi file menggunakan path yang berasal dari `VaultConfig.path` + relative path yang ditemukan oleh scanner — tidak ada user-controlled path injection
-
-**Risiko residual**: Kalau user secara manual menambahkan vault path yang menunjuk ke directory sensitif (misal `C:\Windows`) yang kebetulan punya subdirectory `.obsidian` (extremely unlikely). Validasi `.obsidian` folder cukup untuk mencegah ini.
-
-| Rating | ✅ Aman |
+| Sebelumnya | Sekarang |
 |---|---|
+| Content preview selalu tersimpan | User bisa disable via toggle |
+| Tidak ada warning | Warning jelas tentang risiko public repo |
+| ⚠️ Sedang | ✅ Fixed |
 
-### 2. Image Path Resolution — ⚠️ Perlu Perhatian
+**Pendapat:** Desain tiga lapis (store layer → indexer logic → UI) sangat baik. Default `storeSnippetsInCache: true` untuk UX optimal, tapi user yang sadar privasi bisa matikan. Warning teks sangat jelas dan langsung menyebut skenario risikonya (push ke public repo).
 
-**File**: `src/views/external-file-view.ts`, method `resolveMediaAndLinks()`
+---
 
+### 🔴 Temuan #2: Path Traversal di Image Resolution → ✅ FIXED
+
+**State sebelumnya:**
 ```typescript
 const decodedSrc = decodeURIComponent(src);
 const absPath = path.join(basePath, decodedSrc);
 const localUri = `app://local/${absPath.replace(/\\/g, '/')}`;
 img.src = localUri;
+// TIDAK ADA validasi — path traversal possible
 ```
 
-**Analisis**:
-- `decodedSrc` berasal dari konten markdown vault lain — **trusted** (ditulis oleh user sendiri atau kolaborator)
-- `path.join(basePath, decodedSrc)` — kalau `decodedSrc` adalah `../../etc/passwd`, Node.js `path.join()` akan resolve ke parent directory
-- Namun, ini hanya menghasilkan URI `app://local/...` yang diproses oleh Electron Obsidian — **Electron membatasi akses `app://local/` ke path yang diizinkan**
-- Defense-in-depth: konten markdown berasal dari vault user sendiri (trusted), dan Electron sandbox membatasi akses file
-
-**Risiko residual**: Rendah. Untuk dieksploitasi, attacker harus: (1) menginject konten markdown ke vault user, DAN (2) Electron sandbox harus punya bug. Layer pertahanan ganda cukup.
-
-| Rating | ⚠️ Rendah — defense-in-depth dari Electron |
-|---|---|
-
-### 3. Cross-Vault Link Parser `[[VaultName::NoteTitle]]` — ✅ Aman
-
-**File**: `src/main.ts`, `registerMarkdownPostProcessor`
-
+**State sekarang:**
 ```typescript
-const regex = /\[\[(.*?)::(.*?)\]\]/g;
-// ...
-a.onclick = (e) => {
-    const target = files.find(f => 
-        f.vaultName.toLowerCase() === vaultName.toLowerCase() && 
-        f.basename.toLowerCase() === noteName.toLowerCase()
-    );
-    if (target) this.fileOpener.openFile(target);
-};
-```
+// external-file-view.ts:102-113
+const vaultRoot = this.file.absolutePath.substring(
+    0, 
+    this.file.absolutePath.length - this.file.relativePath.length
+);
 
-**Analisis**:
-- Input dari markdown content — trusted (user's own notes)
-- Pencocokan dilakukan terhadap indexed files, BUKAN langsung ke path
-- Tidak ada path construction dari user input dalam konteks ini
-- Click handler menggunakan `e.preventDefault()` — mencegah navigasi default
+const decodedSrc = decodeURIComponent(src);
+const absPath = path.normalize(path.join(basePath, decodedSrc));
 
-| Rating | ✅ Aman |
-|---|---|
-
-### 4. Protocol Handler `obsidian://mvn-open` — ✅ Aman
-
-**File**: `src/main.ts`
-
-```typescript
-this.registerObsidianProtocolHandler("mvn-open", async (params) => {
-    const vaultId = params.vaultId;
-    const filePath = params.file;
-    // ...
-    const target = files.find(f => f.vaultId === vaultId && f.relativePath === filePath);
-    if (target) {
-        this.fileOpener.openFile(target);
-    }
-});
-```
-
-**Analisis**:
-- Parameter URI (`vaultId`, `file`) TIDAK DIGUNAKAN untuk membuka file secara langsung
-- Lookup dilakukan ke index → hanya file yang SUDAH ADA di index yang bisa dibuka
-- File tidak ditemukan → hanya menampilkan Notice, tidak ada path traversal
-
-| Rating | ✅ Aman |
-|---|---|
-
-### 5. Move/Copy File Operation — ✅ Aman
-
-**File**: `src/modals/file-operation-modal.ts`
-
-```typescript
-const sourcePath = (this.app.vault.adapter as any).getBasePath() + '/' + activeFile.path;
-const targetPath = path.join(targetVault.path, activeFile.name);
-
-if (fs.existsSync(targetPath)) {
-    new Notice(`File ${activeFile.name} already exists in target vault!`);
+// Security: Prevent path traversal outside the vault boundary
+if (!absPath.startsWith(path.normalize(vaultRoot))) {
+    console.warn("Multi-Vault Navigator: Blocked image path traversal outside vault boundary.", absPath);
     return;
 }
-fs.copyFileSync(sourcePath, targetPath);
+
+const localUri = `app://local/${absPath.replace(/\\/g, '/')}`;
+img.src = localUri;
 ```
 
-**Analisis**:
-- Source path: dari Obsidian API (`activeFile.path`) → trusted
-- Target path: dari `targetVault.path` (konfigurasi) + `activeFile.name` (trusted)
-- `fs.existsSync()` guard → mencegah overwrite tidak sengaja
-- Move operation: copy dulu, baru trash source → kalau trash gagal, file tetap ada di source (lebih aman daripada delete dulu baru copy)
+**Perbaikan kunci:**
+1. `vaultRoot` dihitung dari `absolutePath` dikurangi `relativePath` — akurat tanpa hardcode
+2. `path.normalize()` di kedua sisi — menangani `../` dan path separator beda OS
+3. Guard `startsWith()` — menolak path yang resolve ke luar vault
+4. `console.warn()` — logging untuk audit kalau ada upaya traversal
 
-| Rating | ✅ Aman |
+| Sebelumnya | Sekarang |
 |---|---|
+| Tidak ada validasi | `startsWith(vaultRoot)` guard |
+| Path.join tanpa normalize | `path.normalize()` di kedua sisi |
+| ⚠️ Rendah | ✅ Fixed |
 
-### 6. Index Cache — ⚠️ Data Leakage Risk (Lokal)
+**Pendapat:** Implementasi ini robust — `path.normalize()` + `startsWith()` adalah idiomatic Node.js defense melawan path traversal. Satu-satunya catatan kecil: untuk defense maksimum, bisa tambahkan `path.resolve()` sebelum compare, tapi `path.normalize()` sudah cukup untuk use case ini karena source path berasal dari vault sendiri (trusted).
 
-**File**: `src/indexer/index-store.ts`
+---
 
+### 🔴 Temuan #3: Rate Limiting BuildFullIndex → ✅ FIXED
+
+**State sebelumnya:**
 ```typescript
-await this.app.vault.adapter.write(filePath, JSON.stringify(cache));
-```
-
-**Analisis**:
-- Cache disimpan di `.obsidian/plugins/multi-vault-navigator/index-cache.json`
-- Berisi: `IndexedFile[]` — vault name, relative path, basename, headings, tags, **content preview** (1000 karakter default), frontmatter
-- **Ini adalah cross-vault content leakage**: konten dari vault B tersimpan di disk vault A (melalui plugin directory vault A)
-- Kalau vault A di-share atau di-backup, content preview dari vault B ikut terbawa
-- `.obsidian/` adalah application data — biasanya tidak di-share, tapi tetap risk
-
-**Risiko**: Kalau user mem-backup vault A atau menshare folder vault A (misal via git), content preview dari vault B yang seharusnya private bisa ikut tersimpan.
-
-**Rekomendasi**: 
-- Tambahkan opsi "Exclude content preview from cache" di settings
-- ATAU: bungkus content preview dengan encryption (overkill untuk use case ini)
-- ATAU: dokumentasikan dengan jelas di README bahwa cross-vault content preview tersimpan di plugin directory
-
-| Rating | ⚠️ Sedang — awareness issue, bukan exploit |
-|---|---|
-
-### 7. Markdown Rendering dari External File — ⚠️ Rendah
-
-**File**: `src/views/external-file-view.ts`
-
-```typescript
-this.content = fs.readFileSync(file.absolutePath, 'utf8');
-await MarkdownRenderer.renderMarkdown(this.content, contentDiv, '', this);
-```
-
-**Analisis**:
-- Konten markdown dirender menggunakan Obsidian built-in `MarkdownRenderer`
-- Renderer Obsidian **tidak mengeksekusi JavaScript** — HTML tag di-strip di reading view
-- Tidak ada `innerHTML` injection — semua rendering melalui Obsidian API
-- Ini sama amannya dengan membuka file markdown biasa di Obsidian
-
-| Rating | ⚠️ Rendah — bergantung keamanan MarkdownRenderer Obsidian |
-|---|---|
-
-### 8. Global Exclude Patterns — ✅ Aman tapi Implementasi Sederhana
-
-**File**: `src/indexer/file-scanner.ts`
-
-```typescript
-for (const pattern of allExcludes) {
-    const p = pattern.trim().toLowerCase();
-    if (relativePath.toLowerCase().includes(p) || entry.name.toLowerCase().includes(p)) {
-        excluded = true;
-        break;
+// indexer.ts — hanya isIndexing guard
+public async buildFullIndex(showNotice = false): Promise<void> {
+    if (this.isIndexing) {
+        if (showNotice) new Notice("Indexing is already in progress...");
+        return;
     }
+    this.isIndexing = true;
+    // ... no cooldown
 }
 ```
 
-**Analisis**:
-- Ini substring match, bukan regex atau glob — **tidak ada ReDoS atau regex injection risk**
-- Hanya memengaruhi apa yang di-index — tidak ada dampak keamanan
-- Pattern `Private` akan exclude folder `Private` DAN file `private-notes.md` — over-matching, tapi bukan security issue
-
-| Rating | ✅ Aman |
-|---|---|
-
-### 9. Inline Click Handlers — ✅ Aman
-
-Semua `onclick` handlers di plugin menggunakan `addEventListener` atau arrow functions, bukan string-based `onclick="..."` attribute. Tidak ada XSS via inline handlers.
-
-### 10. Dependency Supply Chain — ⚠️ Rendah
-
-| Dependency | Version | Risk |
-|---|---|---|
-| `minisearch` | ^6.3.0 | Search library, pure JavaScript, no native bindings, no network |
-| `obsidian` | latest (dev) | Obsidian API types only |
-| `typescript` | ^5.3.3 (dev) | Compiler only |
-
-- Hanya **1 runtime dependency** — surface attack minimal
-- MiniSearch adalah library pure JavaScript tanpa native addons → tidak ada risiko binary injection
-- Tidak ada dependency dengan akses network
-
-| Rating | ⚠️ Rendah — 1 dependency, no network |
-|---|---|
-
----
-
-## Yang Tidak Ada (dan Kenapa Itu Bagus)
-
-| Tidak Ada | Implikasi Keamanan |
-|---|---|
-| Network calls | Tidak ada data exfiltration, CSRF, SSRF, atau API key leakage |
-| `eval()` / `new Function()` | Tidak ada code injection |
-| `child_process` / `exec` | Tidak ada command injection |
-| `innerHTML` assignment | Tidak ada DOM-based XSS |
-| Third-party analytics | Tidak ada tracking / telemetry |
-| Obfuscated code | Kode transparan — bisa diaudit |
-
----
-
-## Matriks Risiko
-
-| Vektor | Severity | Exploitability | Impact | Rating |
-|---|---|---|---|---|
-| File system access (path validation) | Low | Low | Cross-vault reading | ✅ Aman |
-| Image path traversal | Low | Very Low | Terbatas Electron sandbox | ⚠️ Rendah |
-| Cross-vault link injection | Low | Very Low | Terbatas ke indexed files | ✅ Aman |
-| Protocol handler injection | Low | Very Low | Terbatas ke indexed files | ✅ Aman |
-| Index cache data leakage | **Medium** | Low | Content preview vault lain tersimpan di disk | ⚠️ Sedang |
-| Markdown rendering (XSS) | Low | Very Low | Sama amannya dengan Obsidian | ⚠️ Rendah |
-| Move/Copy overwrite | Low | Very Low | Sudah ada guard | ✅ Aman |
-| Dependency compromise | Low | Very Low | 1 dep, no network | ⚠️ Rendah |
-
----
-
-## Temuan Spesifik & Rekomendasi
-
-### Temuan #1: Content Preview Vault Lain Tersimpan di Disk
-
-**Lokasi**: `src/indexer/index-store.ts` → menulis `IndexedFile[]` (dengan `contentPreview`) ke `index-cache.json`
-
-**Dampak**: Kalau vault di-backup atau di-share, content preview dari vault lain ikut terbawa.
-
-**Rekomendasi**: 
-```
-1. (Quick) Tambahkan dokumentasi di README bahwa cache mengandung content preview lintas vault
-2. (Better) Tambahkan setting "Store content preview in cache: Yes/No" 
-3. (Best) Kalau user disable, jangan simpan contentPreview di cache, generate on-the-fly saat search
-```
-
-### Temuan #2: Path Traversal di Image Resolution (Mitigated)
-
-**Lokasi**: `src/views/external-file-view.ts:resolveMediaAndLinks()`
-
+**State sekarang:**
 ```typescript
-const absPath = path.join(basePath, decodedSrc);
+// indexer.ts:23 — cooldown field
+private lastIndexTime: number = 0;
+
+// indexer.ts:47-50 — cooldown guard
+public async buildFullIndex(showNotice = false): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastIndexTime < 15000) {
+        if (showNotice) new Notice("Indexing is on cooldown. Please wait a few seconds.");
+        return;
+    }
+    // ...
+}
+
+// indexer.ts:79 — update lastIndexTime after success
+this.lastIndexTime = Date.now();
 ```
 
-**Dampak**: Kalau file markdown dari vault lain mengandung `![](../../secret/file.png)`, `path.join` akan resolve ke parent. TAPI ini di-mitigasi oleh Obsidian's `app://local/` handler yang terbatas.
-
-**Rekomendasi**: 
-```
-Tambahkan validasi: pastikan resolved path tidak keluar dari vault directory.
-path.resolve(...) harus dimulai dengan vault path yang bersangkutan.
-```
-
-### Temuan #3: Tidak Ada Rate Limiting pada Build Full Index
-
-**Lokasi**: `src/indexer/indexer.ts:buildFullIndex()`
-
-**Dampak**: User bisa trigger re-index berkali-kali via command palette atau settings → I/O spike. Bukan security risk, tapi reliability.
-
-**Rekomendasi**: 
-```
-Cooldown 30 detik antar build. Sudah ada `this.isIndexing` guard tapi tidak mencegah trigger berulang.
-```
-
-### Temuan #4: `(this.app.vault.adapter as any)` Type Cast
-
-**Lokasi**: `src/modals/file-operation-modal.ts` dan `src/indexer/index-store.ts`
-
-**Dampak**: `as any` cast — tidak ada type safety. Tapi bukan vulnerability karena Obsidian API.
-
-**Rekomendasi**: Gunakan type guard atau `instanceof FileSystemAdapter` check sebelum cast.
+| Sebelumnya | Sekarang |
+|---|---|
+| Bisa trigger spam | 15 detik cooldown |
+| Hanya guard concurrency | Guard concurrency + rate limit |
+| ⚠️ Rendah | ✅ Fixed |
 
 ---
 
-## Skor Keamanan
+### 🔴 Temuan #4: `as any` Type Cast → ✅ FIXED
 
-| Area | Skor | Catatan |
-|---|---|---|
-| Network isolation | **10/10** | Zero network — eliminasi kelas serangan terbesar |
-| File access control | **8/10** | Validasi `.obsidian` folder baik; image resolution bisa diperketat |
-| Input validation | **8/10** | Protocol handler & link parser lookup via index, bukan direct path |
-| Data at rest | **6/10** | Index cache mengandung content preview lintas vault tanpa enkripsi |
-| Dependency hygiene | **9/10** | 1 runtime dependency, pure JS, no native bindings |
-| Code quality | **7/10** | Clear structure, JSDoc minimal, beberapa `as any` cast |
-| **Overall** | **7.5/10** | Aman — tidak ada critical/high vulnerability |
+**State sebelumnya:**
+```typescript
+// file-operation-modal.ts
+const sourcePath = (this.app.vault.adapter as any).getBasePath() + '/' + activeFile.path;
+```
+
+**State sekarang:**
+```typescript
+// file-operation-modal.ts:132-137
+const adapter = this.app.vault.adapter;
+let sourcePath = '';
+if ('getBasePath' in adapter && typeof adapter.getBasePath === 'function') {
+    sourcePath = path.join(adapter.getBasePath(), activeFile.path);
+} else {
+    new Notice("Error: Adapter doesn't support getBasePath().");
+    return;
+}
+```
+
+**Perbaikan kunci:**
+1. `'getBasePath' in adapter` — structural type check, bukan cast
+2. `typeof adapter.getBasePath === 'function'` — memastikan bisa dipanggil
+3. `path.join()` — path joining yang benar (sebelumnya string concatenation `+ '/' +`)
+4. Graceful error handling — Notice + return, bukan crash
+
+| Sebelumnya | Sekarang |
+|---|---|
+| `as any` cast | Runtime type guard |
+| String concat path | `path.join()` |
+| No error handling | Graceful Notice + return |
+| ⚠️ Rendah | ✅ Fixed |
 
 ---
 
-## Perbandingan dengan Plugin Obsidian Sejenis
+## Perbaikan Tambahan (Tidak Diminta, Tapi Bagus)
 
-Dibandingkan plugin Obsidian lain yang membaca file system (seperti `obsidian-vault-transfer`, `obsidian-note-linker`), plugin ini setara atau lebih aman karena:
-- Tidak ada network calls (beberapa plugin sejenis menggunakan GitHub API atau webhooks)
-- Validasi vault path dengan pengecekan `.obsidian` folder
-- Protocol handler lookup via index, bukan direct path
+### ✅ Search Engine: `fileMap` untuk O(1) lookup
+
+**State sebelumnya:**
+```typescript
+// search-engine.ts — O(n) find per result
+return results.map(r => this.indexedFiles.find(f => f.id === r.id) as IndexedFile)
+```
+
+**State sekarang:**
+```typescript
+// search-engine.ts:20 — fileMap
+private fileMap: Map<string, IndexedFile> = new Map();
+
+// search-engine.ts:47-48 — indexFiles updates map
+this.fileMap.clear();
+files.forEach(f => this.fileMap.set(f.id, f));
+
+// search-engine.ts:107-109 — O(1) lookup
+return results.map(r => ({
+    ...r,
+    file: this.fileMap.get(r.id)!
+})).filter(r => !!r.file);
+```
+
+Ini bukan security fix, tapi performance improvement yang signifikan — O(n²) → O(n) di search result mapping.
+
+### ✅ Search Engine: Tag-based filtering
+
+Fitur baru di `search()`: parameter `tags?: string[]` untuk filter hasil berdasarkan tag. Tidak ada implikasi keamanan — pure functional addition.
+
+### ✅ `MultiVaultSearchResult` typed return
+
+Return type sekarang `MultiVaultSearchResult` (dengan `.file` property) bukan bare `IndexedFile` — type safety improvement.
+
+---
+
+## Skor Keamanan — Revisi
+
+| Area | Sebelumnya | Sekarang | Catatan |
+|---|---|---|---|
+| Network isolation | 10/10 | **10/10** | Tetap — zero network |
+| File access control | 8/10 | **9/10** | +1: path traversal guard with normalize+startsWith |
+| Input validation | 8/10 | **9/10** | +1: `as any` → runtime type guard + graceful error |
+| Data at rest | 6/10 | **9/10** | +3: conditional snippet storage + UI toggle + warning |
+| Dependency hygiene | 9/10 | **9/10** | Tetap |
+| Code quality | 7/10 | **8/10** | +1: type guards, fileMap, typed returns |
+| **Overall** | **7.5/10** | **9/10** | **Naik 1.5 poin** |
+
+---
+
+## Yang Masih Bisa Ditingkatkan (Minor)
+
+### 1. Image path validation: `path.resolve()` untuk defence-in-depth
+
+Saat ini:
+```typescript
+const absPath = path.normalize(path.join(basePath, decodedSrc));
+if (!absPath.startsWith(path.normalize(vaultRoot))) { ... }
+```
+
+Rekomendasi minor:
+```typescript
+const resolvedPath = path.resolve(basePath, decodedSrc);
+const normalizedVaultRoot = path.resolve(vaultRoot);
+if (!resolvedPath.startsWith(normalizedVaultRoot)) { ... }
+```
+
+`path.resolve()` lebih ketat dari `path.normalize() + path.join()` karena resolve symlinks dan absolute path. Tapi ini **nice-to-have** — `normalize` sudah cukup untuk use case plugin lokal.
+
+### 2. `window.open()` dipanggil di dua tempat tanpa validasi tambahan
+
+`external-file-view.ts:88` dan `main.ts:258` menggunakan:
+```typescript
+window.open(`obsidian://open?vault=...`);
+```
+
+`encodeURIComponent()` sudah digunakan — aman. Tapi tidak ada konfirmasi user sebelum switch vault. **Bukan security issue**, hanya UX. User mungkin tidak sadar sedang berpindah vault.
+
+### 3. `node` variable di TreeWalker — shadowing `Node` global
+
+`main.ts:247`:
+```typescript
+const nodesToReplace: { node: Node, parent: Node, replacements: Node[] }[] = [];
+```
+
+Type `Node` di sini adalah DOM `Node` global, tapi ada risk TypeScript menganggapnya sebagai Node.js `NodeJS.*` di environment tertentu. Tidak ada dampak runtime, hanya type confusion potensial.
+
+### 4. `onClose()` — tidak cleanup listener di beberapa modal
+
+`file-operation-modal.ts`, `duplicate-detector-modal.ts`, dll. punya `onClose()` yang hanya clear DOM. Tidak ada event listener yang di-detach. Di Obsidian plugin lifecycle normal, ini fine karena modal di-destroy. Tapi best practice: bersihkan listener.
 
 ---
 
 ## Kesimpulan
 
-**Multi-Vault Navigator adalah plugin yang aman.** 
+**Semua 4 temuan keamanan dari analisis pertama sudah diperbaiki.** Kualitas perbaikannya tinggi — bukan sekadar quick patch, tapi full fixes dengan proper validation dan user-facing controls.
 
-Tiga pilar keamanan utamanya:
-1. **Zero network** — tidak ada data yang bisa keluar dari mesin user
-2. **Index-based lookup** — protocol handler dan cross-vault link tidak membuka file dari parameter URI secara langsung; harus ada di index dulu
-3. **Trusted input** — semua konten berasal dari vault user sendiri (bukan dari internet atau pihak ketiga)
+Tiga perbaikan paling signifikan:
+1. **Path traversal guard** — `path.normalize()` + `startsWith(vaultRoot)` — idiomatic Node.js defense
+2. **Conditional snippet storage** — tiga lapis (store → indexer → UI) dengan warning jelas
+3. **Runtime type guard** — menggantikan `as any` dengan structural type check + graceful error
 
-Satu-satunya isu yang perlu di-address: **index cache menyimpan content preview lintas vault di disk** tanpa opsi untuk menonaktifkannya. Ini lebih merupakan privacy/awareness issue daripada vulnerability — tapi perlu didokumentasikan dengan jelas.
-
-Kalau plugin ini di-submit ke Obsidian Community Plugin review, saya yakin akan lolos — asalkan dokumentasi index cache diperjelas.
+Skor naik dari **7.5/10 → 9/10**. Plugin ini sekarang sangat aman untuk digunakan dan siap untuk Obsidian Community Plugin submission.
 
 ---
 
