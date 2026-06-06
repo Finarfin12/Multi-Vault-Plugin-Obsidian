@@ -134,7 +134,7 @@ export class SearchPageView extends ItemView {
 
     if (!query.trim() && tags.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
-      emptyState.createEl('div', { text: 'Mulai mengetik untuk mencari file atau filter dengan #tag...', cls: 'mvn-text-muted' });
+      emptyState.createEl('div', { text: 'Start typing to search for files or filter by #tag...', cls: 'mvn-text-muted' });
       return;
     }
 
