@@ -57,10 +57,11 @@
 }
 
 /* Search Page View (Google-like) */
-.mvn-search-page-container {
+.mvn-cc-main {
   padding: 40px;
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .mvn-sp-header {
