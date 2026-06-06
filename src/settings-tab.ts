@@ -146,7 +146,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
            
            window.clearTimeout(excludeTimeout);
            excludeTimeout = window.setTimeout(() => {
-            void this.indexer.rebuildIndexAsync().then(() => {
+             void this.indexer.buildFullIndex(true).then(() => {
                this.plugin.refreshSearchEngine();
              }).catch(console.error);
            }, 1500);
@@ -165,7 +165,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                  this.display(); // Refresh the settings UI
                  
                  // Auto-refresh the index so the file immediately disappears from search
-                 await this.indexer.rebuildIndexAsync();
+                 await this.indexer.buildFullIndex(true);
                  this.plugin.refreshSearchEngine();
                }
              })();

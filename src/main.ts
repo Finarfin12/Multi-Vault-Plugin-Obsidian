@@ -262,7 +262,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     if (this.settings.indexOptions.autoRefreshOnStartup) {
        // Using setTimeout to not block Obsidian startup
        window.setTimeout(() => {
-         void this.indexer.rebuildIndexAsync().then(() => {
+         void this.indexer.buildFullIndex(false).then(() => {
            this.refreshSearchEngine();
          }).catch(console.error);
        }, 5000);
