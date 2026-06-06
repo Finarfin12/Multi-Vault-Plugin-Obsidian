@@ -20,7 +20,7 @@ export class SearchModal extends SuggestModal<IndexedFile> {
     if (!query.trim()) {
       return this.searchEngine.getRecentFiles(10);
     }
-    return this.searchEngine.search(query, { limit: 50 });
+    return this.searchEngine.search(query, { limit: 50 }).map(r => r.file);
   }
 
   renderSuggestion(file: IndexedFile, el: HTMLElement) {

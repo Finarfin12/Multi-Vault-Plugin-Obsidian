@@ -263,6 +263,38 @@
   margin-bottom: 10px;
   font-weight: 600;
 }
+
+.mvn-sp-snippet {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-top: 5px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.mvn-sp-snippet mark {
+  background-color: var(--text-highlight-bg, rgba(255, 255, 0, 0.4));
+  color: var(--text-normal);
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.mvn-sp-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mvn-sp-tag {
+  background-color: var(--background-secondary-alt);
+  color: var(--text-muted);
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+}
 .mvn-cc-header-icon svg {
   width: 16px;
   height: 16px;

@@ -110,16 +110,29 @@ export class SearchPageView extends ItemView {
     }
   }
 
-  private performSearch(query: string) {
+  private performSearch(rawQuery: string) {
     this.resultsContainerEl.empty();
 
-    if (!query.trim()) {
+    const tags: string[] = [];
+    const queryParts: string[] = [];
+
+    rawQuery.split(/\s+/).forEach(part => {
+      if (part.startsWith('#')) {
+        tags.push(part);
+      } else if (part.length > 0) {
+        queryParts.push(part);
+      }
+    });
+
+    const query = queryParts.join(' ');
+
+    if (!query.trim() && tags.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
-      emptyState.createEl('div', { text: 'Mulai mengetik untuk mencari file...', cls: 'mvn-text-muted' });
+      emptyState.createEl('div', { text: 'Mulai mengetik untuk mencari file atau filter dengan #tag...', cls: 'mvn-text-muted' });
       return;
     }
 
-    const results = this.searchEngine.search(query, { limit: 20 });
+    const results = this.searchEngine.search(query, { limit: 20, tags });
 
     if (results.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
@@ -156,7 +169,8 @@ export class SearchPageView extends ItemView {
        }).open();
     };
 
-    results.forEach(file => {
+    results.forEach(result => {
+      const file = result.file;
       const itemEl = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-result-item' });
       
       const titleEl = itemEl.createDiv({ cls: 'mvn-sp-title' });
@@ -167,7 +181,16 @@ export class SearchPageView extends ItemView {
 
       if (file.contentPreview) {
         const snippetEl = itemEl.createDiv({ cls: 'mvn-sp-snippet' });
-        snippetEl.innerText = file.contentPreview.substring(0, 200) + "...";
+        const matchTerms = Object.keys(result.match || {});
+        const highlightTerms = [...new Set([...matchTerms, ...queryParts])];
+        snippetEl.innerHTML = this.getHighlightedSnippet(file.contentPreview, highlightTerms);
+      }
+
+      if (file.tags && file.tags.length > 0) {
+        const tagsContainer = itemEl.createDiv({ cls: 'mvn-sp-tags-container' });
+        file.tags.forEach(tag => {
+           tagsContainer.createSpan({ cls: 'mvn-sp-tag', text: tag });
+        });
       }
 
       itemEl.addEventListener('click', () => {
@@ -187,5 +210,60 @@ export class SearchPageView extends ItemView {
          this.plugin.refreshSidebar();
       };
     });
+  }
+
+  private getHighlightedSnippet(preview: string, terms: string[]): string {
+    if (!preview) return '';
+    
+    const escapeHtml = (unsafe: string) => {
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    };
+
+    if (terms.length === 0) {
+       return escapeHtml(preview.substring(0, 200)) + "...";
+    }
+
+    const lowerPreview = preview.toLowerCase();
+    let firstMatchIdx = -1;
+    let matchedTerm = "";
+
+    for (const term of terms) {
+      if (term.length < 2) continue;
+      const idx = lowerPreview.indexOf(term.toLowerCase());
+      if (idx !== -1 && (firstMatchIdx === -1 || idx < firstMatchIdx)) {
+        firstMatchIdx = idx;
+        matchedTerm = term;
+      }
+    }
+
+    if (firstMatchIdx === -1) {
+       return escapeHtml(preview.substring(0, 200)) + "...";
+    }
+
+    const contextRadius = 80;
+    let start = Math.max(0, firstMatchIdx - contextRadius);
+    let end = Math.min(preview.length, firstMatchIdx + matchedTerm.length + contextRadius);
+
+    let snippet = preview.substring(start, end);
+    let prefix = start > 0 ? "..." : "";
+    let suffix = end < preview.length ? "..." : "";
+
+    let escapedSnippet = escapeHtml(snippet);
+
+    for (const term of terms) {
+       if (term.length < 2) continue;
+       const escapedTerm = escapeHtml(term);
+       // Escape special regex chars
+       const safeRegexTerm = escapedTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+       const regex = new RegExp(`(${safeRegexTerm})`, 'gi');
+       escapedSnippet = escapedSnippet.replace(regex, '<mark>$1</mark>');
+    }
+
+    return prefix + escapedSnippet + suffix;
   }
 }

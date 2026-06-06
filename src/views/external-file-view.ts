@@ -129,7 +129,7 @@ export class ExternalFileView extends ItemView {
         // Kita menggunakan pencarian judul yang akurat (prefix/fuzzy)
         const results = this.searchEngine.search(href.replace('.md', ''), { limit: 5 });
         if (results.length > 0) {
-           this.fileOpener.openFile(results[0]);
+           this.fileOpener.openFile(results[0].file);
         } else {
            // Fallback if not found
            new Notice(`File "${href}" not found in any indexed vault.`);
