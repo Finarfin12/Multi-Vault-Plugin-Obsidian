@@ -1,3 +1,4 @@
+/* eslint-disable obsidianmd/no-unsupported-api */
 import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, MultiVaultSettings } from './types';
 import { VaultRegistry } from './vault-registry';
