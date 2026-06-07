@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/no-unsupported-api */
 import { App, Modal, Setting, Notice } from 'obsidian';
 import * as fs from 'fs';
 import * as path from 'path';

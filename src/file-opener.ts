@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/no-unsupported-api */
 import { App, Notice } from 'obsidian';
 import { IndexedFile, VaultConfig } from './types';
 import { VaultRegistry } from './vault-registry';

@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/no-unsupported-api */
 import { ItemView, WorkspaceLeaf, setIcon, Notice } from 'obsidian';
 import MultiVaultNavigatorPlugin from '../main';
 import { FileOpener } from '../file-opener';

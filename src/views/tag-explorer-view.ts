@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/no-unsupported-api */
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { Indexer } from '../indexer/indexer';
 import { VIEW_TYPE_SEARCH_PAGE, SearchPageView } from './search-page-view';

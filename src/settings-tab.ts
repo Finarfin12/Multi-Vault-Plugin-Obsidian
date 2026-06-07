@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/no-unsupported-api */
 import { App, Notice, PluginSettingTab, Setting, SettingDefinitionItem, SettingGroupItem } from 'obsidian';
 import { VaultRegistry } from './vault-registry';
 import { Indexer } from './indexer/indexer';
