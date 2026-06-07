@@ -75,7 +75,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-        await (this.app.workspace as any).revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -85,7 +85,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_TAG_EXPLORER, active: true });
-        await (this.app.workspace as any).revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -95,7 +95,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_DAILY_DASHBOARD, active: true });
-        await (this.app.workspace as any).revealLeaf(leaf);
+        await this.app.workspace.revealLeaf(leaf);
       }
     });
 
@@ -255,7 +255,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.addRibbonIcon('search', 'Multi-Vault Navigator', async () => {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
-      await (this.app.workspace as any).revealLeaf(leaf);
+      await this.app.workspace.revealLeaf(leaf);
     });
 
     // Auto refresh index if needed (in a realistic app we would probably do it lazily or on a timer)
@@ -301,7 +301,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       await leaf?.setViewState({ type: VIEW_TYPE_SIDEBAR, active: true });
     }
     
-    if (leaf) await (workspace as any).revealLeaf(leaf);
+    if (leaf) await workspace.revealLeaf(leaf);
   }
 
   refreshSearchEngine() {

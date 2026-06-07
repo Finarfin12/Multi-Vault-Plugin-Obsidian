@@ -1,6 +1,6 @@
 {
   "name": "multi-vault-navigator",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Cross-vault search and navigation.",
   "main": "main.js",
   "scripts": {

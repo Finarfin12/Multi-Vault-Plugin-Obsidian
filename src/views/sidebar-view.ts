@@ -89,7 +89,7 @@ export class SidebarView extends ItemView {
               const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SEARCH_PAGE);
               if (leaves.length > 0) {
                  const view = leaves[0].view as SearchPageView;
-                 await (this.app.workspace as any).revealLeaf(leaves[0]);
+                 await this.app.workspace.revealLeaf(leaves[0]);
                  view.setSearchQuery(ss.query);
               } else {
                  new Notice("Please open the Cross-Vault Command Center first.");
