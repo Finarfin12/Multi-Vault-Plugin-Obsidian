@@ -26,7 +26,7 @@ export class FileOpener {
       if (view instanceof ExternalFileView) {
          await view.setFile(file);
       }
-      await this.app.workspace.revealLeaf(leaf);
+      await (this.app.workspace as any).revealLeaf(leaf);
     }
   }
 
