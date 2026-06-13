@@ -209,14 +209,16 @@ export class SearchPageView extends ItemView {
       const vaultConfig = this.plugin.vaultRegistry.getVaultById(file.vaultId);
       const vaultBadge = pathEl.createSpan({ cls: 'mvn-sp-vault-badge' });
       if (vaultConfig?.color) {
-        vaultBadge.style.backgroundColor = vaultConfig.color;
-        vaultBadge.style.color = '#fff';
-        vaultBadge.style.padding = '2px 6px';
-        vaultBadge.style.borderRadius = '4px';
-        vaultBadge.style.marginRight = '6px';
-        vaultBadge.style.fontSize = '0.85em';
+        vaultBadge.setCssStyles({
+          backgroundColor: vaultConfig.color,
+          color: '#fff',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          marginRight: '6px',
+          fontSize: '0.85em'
+        });
       } else {
-        vaultBadge.style.marginRight = '6px';
+        vaultBadge.setCssStyles({ marginRight: '6px' });
       }
       if (vaultConfig?.icon) {
         vaultBadge.innerText = vaultConfig.icon + ' ' + file.vaultName;
@@ -224,7 +226,7 @@ export class SearchPageView extends ItemView {
         vaultBadge.innerText = `[${file.vaultName}]`;
       }
       
-      pathEl.appendChild(document.createTextNode(` ${file.relativePath}`));
+      pathEl.appendChild(activeDocument.createTextNode(` ${file.relativePath}`));
 
       if (file.contentPreview) {
         const snippetEl = itemEl.createDiv({ cls: 'mvn-sp-snippet' });

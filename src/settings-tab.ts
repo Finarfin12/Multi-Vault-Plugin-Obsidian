@@ -134,7 +134,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             render: (setting: Setting) => {
               setting.addButton(btn => btn
                 .setButtonText("Clear Cache")
-                .setWarning()
+                .setDestructive()
                 .onClick(async () => {
                   await this.indexer.clearIndex();
                   this.plugin.refreshSearchEngine();
