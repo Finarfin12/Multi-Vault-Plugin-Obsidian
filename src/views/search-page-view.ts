@@ -206,7 +206,7 @@ export class SearchPageView extends ItemView {
 
       const pathEl = itemEl.createDiv({ cls: 'mvn-sp-path' });
       
-      const vaultConfig = this.plugin.vaultRegistry.getVault(file.vaultId);
+      const vaultConfig = this.plugin.vaultRegistry.getVaultById(file.vaultId);
       const vaultBadge = pathEl.createSpan({ cls: 'mvn-sp-vault-badge' });
       if (vaultConfig?.color) {
         vaultBadge.style.backgroundColor = vaultConfig.color;
