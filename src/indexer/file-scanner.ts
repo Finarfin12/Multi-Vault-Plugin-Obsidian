@@ -59,6 +59,19 @@ export class FileScanner {
         if (entry.isDirectory()) {
           await walk(fullPath);
         } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          // Apply vault.includePatterns if configured
+          const includePatterns = (vault.includePatterns || []).filter(p => p.trim().length > 0);
+          if (includePatterns.length > 0) {
+            let included = false;
+            for (const pattern of includePatterns) {
+              const p = pattern.trim().toLowerCase();
+              if (relativePath.toLowerCase().includes(p) || entry.name.toLowerCase().includes(p)) {
+                included = true;
+                break;
+              }
+            }
+            if (!included) continue;
+          }
           try {
             const stats = await fs.promises.stat(fullPath);
             files.push({

@@ -164,6 +164,14 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       }
     });
 
+    this.addCommand({
+      id: 'multi-vault-clear-index',
+      name: 'Clear Cross-Vault Index',
+      callback: async () => {
+        await this.indexer.clearIndex();
+      }
+    });
+
     // Register protocol handler
     this.registerObsidianProtocolHandler("mvn-open", async (params) => {
        const vaultId = params.vaultId;

@@ -18,6 +18,8 @@ export class SearchPageView extends ItemView {
   private searchEngine: SearchEngine;
   private fileOpener: FileOpener;
   private searchInputEl!: HTMLInputElement;
+  private vaultFilterEl!: HTMLSelectElement;
+  private sortFilterEl!: HTMLSelectElement;
   private resultsContainerEl!: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf, plugin: MultiVaultNavigatorPlugin, searchEngine: SearchEngine, fileOpener: FileOpener) {
@@ -97,6 +99,20 @@ export class SearchPageView extends ItemView {
     btnMove.createSpan({ text: 'Move/Copy' });
     btnMove.onclick = () => (this.app as unknown as AppWithCommands).commands.executeCommandById('multi-vault-navigator:multi-vault-move-copy');
 
+    const filterBar = mainEl.createDiv({ cls: 'mvn-sp-filter-bar', attr: { style: 'display: flex; gap: 10px; margin-bottom: 10px;' } });
+    
+    this.vaultFilterEl = filterBar.createEl('select', { cls: 'mvn-sp-select' });
+    this.vaultFilterEl.createEl('option', { value: 'all', text: 'All Vaults' });
+    this.plugin.vaultRegistry.getEnabledVaults().forEach(v => {
+        this.vaultFilterEl.createEl('option', { value: v.id, text: v.name });
+    });
+    this.vaultFilterEl.addEventListener('change', () => this.performSearch(this.searchInputEl.value));
+    
+    this.sortFilterEl = filterBar.createEl('select', { cls: 'mvn-sp-select' });
+    const sorts = ['Relevance', 'Date (Newest)', 'Date (Oldest)', 'Vault Name'];
+    sorts.forEach(s => this.sortFilterEl.createEl('option', { value: s, text: s }));
+    this.sortFilterEl.addEventListener('change', () => this.performSearch(this.searchInputEl.value));
+
     this.resultsContainerEl = mainEl.createDiv({ cls: 'mvn-sp-results' });
 
     this.searchInputEl.addEventListener('input', (e) => {
@@ -138,7 +154,17 @@ export class SearchPageView extends ItemView {
       return;
     }
 
-    const results = this.searchEngine.search(query, { limit: 20, tags });
+    const selectedVaultId = this.vaultFilterEl?.value === 'all' ? undefined : this.vaultFilterEl?.value;
+    const results = this.searchEngine.search(query, { limit: selectedVaultId ? 100 : 20, tags, vaultId: selectedVaultId });
+
+    const sortOpt = this.sortFilterEl?.value || 'Relevance';
+    if (sortOpt === 'Date (Newest)') {
+       results.sort((a, b) => b.file.mtime - a.file.mtime);
+    } else if (sortOpt === 'Date (Oldest)') {
+       results.sort((a, b) => a.file.mtime - b.file.mtime);
+    } else if (sortOpt === 'Vault Name') {
+       results.sort((a, b) => a.file.vaultName.localeCompare(b.file.vaultName));
+    }
 
     if (results.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
@@ -179,7 +205,26 @@ export class SearchPageView extends ItemView {
       titleEl.innerText = file.basename;
 
       const pathEl = itemEl.createDiv({ cls: 'mvn-sp-path' });
-      pathEl.innerText = `[${file.vaultName}] ${file.relativePath}`;
+      
+      const vaultConfig = this.plugin.vaultRegistry.getVault(file.vaultId);
+      const vaultBadge = pathEl.createSpan({ cls: 'mvn-sp-vault-badge' });
+      if (vaultConfig?.color) {
+        vaultBadge.style.backgroundColor = vaultConfig.color;
+        vaultBadge.style.color = '#fff';
+        vaultBadge.style.padding = '2px 6px';
+        vaultBadge.style.borderRadius = '4px';
+        vaultBadge.style.marginRight = '6px';
+        vaultBadge.style.fontSize = '0.85em';
+      } else {
+        vaultBadge.style.marginRight = '6px';
+      }
+      if (vaultConfig?.icon) {
+        vaultBadge.innerText = vaultConfig.icon + ' ' + file.vaultName;
+      } else {
+        vaultBadge.innerText = `[${file.vaultName}]`;
+      }
+      
+      pathEl.appendChild(document.createTextNode(` ${file.relativePath}`));
 
       if (file.contentPreview) {
         const snippetEl = itemEl.createDiv({ cls: 'mvn-sp-snippet' });

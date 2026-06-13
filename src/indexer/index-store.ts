@@ -17,7 +17,7 @@ export class IndexStore {
     });
 
     const cache: IndexCache = {
-      version: 1,
+      version: 2,
       generatedAt: new Date().toISOString(),
       files: filesToCache
     };
@@ -50,7 +50,9 @@ export class IndexStore {
         if (exists) {
           const content = await this.app.vault.adapter.read(filePath);
           const cache = JSON.parse(content) as IndexCache;
-          return cache.files || [];
+          if (cache.version === 2) {
+            return cache.files || [];
+          }
         }
       } catch {
         return [];

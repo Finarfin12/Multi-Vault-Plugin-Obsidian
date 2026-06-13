@@ -33,6 +33,21 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         desc: vault.path,
         render: (setting: Setting) => {
           setting
+            .addColorPicker(color => color
+              .setValue(vault.color || '#000000')
+              .onChange(async (value) => {
+                this.vaultRegistry.updateVault(vault.id, { color: value });
+                await this.plugin.saveSettings();
+              })
+            )
+            .addText(text => text
+              .setPlaceholder("Icon")
+              .setValue(vault.icon || "")
+              .onChange(async (value) => {
+                this.vaultRegistry.updateVault(vault.id, { icon: value });
+                await this.plugin.saveSettings();
+              })
+            )
             .addToggle(toggle => toggle
               .setValue(vault.enabled)
               .onChange(async (value) => {
@@ -113,6 +128,20 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         type: 'group',
         heading: 'Indexing',
         items: [
+          {
+            name: "Clear Index",
+            desc: "Wipe the cross-vault index cache entirely.",
+            render: (setting: Setting) => {
+              setting.addButton(btn => btn
+                .setButtonText("Clear Cache")
+                .setWarning()
+                .onClick(async () => {
+                  await this.indexer.clearIndex();
+                  this.plugin.refreshSearchEngine();
+                })
+              );
+            }
+          },
           {
             name: "Refresh Index",
             desc: "Re-scan all enabled vaults and rebuild the cross-vault index.",

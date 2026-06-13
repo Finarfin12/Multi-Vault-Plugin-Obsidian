@@ -23,7 +23,8 @@ To comply with the [Obsidian Developer Policies](https://docs.obsidian.md/Plugin
 ### 1. Cross-Vault Command Center
 Instead of remembering which vault a note is saved in, use the Command Center dashboard.
 - Full-screen dashboard resembling a modern search engine.
-- Displays notes across all your vaults with intelligent fuzzy search and snippet previews.
+- Displays notes across all your vaults with intelligent fuzzy search, vault-specific colors/icons, and snippet previews.
+- Filter results by specific vaults or sort by Relevance, Newest, Oldest, or Vault Name.
 - Pin your favorite cross-vault notes and save frequent searches directly to the sidebar.
 
 ### 2. Read-Only Cross-Vault View
@@ -66,8 +67,9 @@ Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to 
 ## Settings
 
 Go to **Settings > Multi-Vault Navigator** to configure:
-- **Vault List**: Toggle indexing for specific vaults or remove them.
+- **Vault List**: Toggle indexing for specific vaults, configure custom colors and icons, or remove them.
 - **Add Manual Vault**: Add an absolute path to a vault if it wasn't auto-detected.
+- **Refresh & Clear Index**: Manually rebuild or wipe the cross-vault index cache.
 - **Max Preview Characters**: Length of text snippets saved for search indexing.
 - **Global Exclude Patterns**: Comma-separated list of folder/file names to ignore across all vaults (e.g., `Private, secrets`).
 
