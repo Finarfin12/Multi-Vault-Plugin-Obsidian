@@ -22,12 +22,16 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     
-    containerEl.createEl('h2', { text: 'Multi-Vault Navigator' });
+    new Setting(containerEl).setName('Multi-Vault Navigator').setHeading();
 
-    const defs = this.getSettingDefinitions() as any[];
+    const defs = this.getSettingDefinitions() as unknown as (
+      | { type: 'group'; heading: string; items: { name?: string; desc?: string; render?: (s: Setting) => void }[] }
+      | { type?: undefined; name?: string; desc?: string; render?: (s: Setting) => void }
+    )[];
+
     for (const def of defs) {
        if (def.type === 'group') {
-           containerEl.createEl('h3', { text: def.heading });
+           new Setting(containerEl).setName(def.heading).setHeading();
            for (const item of def.items) {
                if (!item.name) continue;
                const s = new Setting(containerEl).setName(item.name);
