@@ -18,6 +18,31 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
     this.indexer = indexer;
   }
 
+  display(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+    
+    containerEl.createEl('h2', { text: 'Multi-Vault Navigator' });
+
+    const defs = this.getSettingDefinitions() as any[];
+    for (const def of defs) {
+       if (def.type === 'group') {
+           containerEl.createEl('h3', { text: def.heading });
+           for (const item of def.items) {
+               if (!item.name) continue;
+               const s = new Setting(containerEl).setName(item.name);
+               if (item.desc) s.setDesc(item.desc);
+               if (item.render) item.render(s);
+           }
+       } else {
+           if (!def.name) continue;
+           const s = new Setting(containerEl).setName(def.name);
+           if (def.desc) s.setDesc(def.desc);
+           if (def.render) def.render(s);
+       }
+    }
+  }
+
   getSettingDefinitions(): SettingDefinitionItem[] {
     const vaults = this.vaultRegistry.getVaults();
     const configuredVaultItems: SettingGroupItem[] = vaults.length === 0 ? [
