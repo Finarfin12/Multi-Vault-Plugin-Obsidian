@@ -18,45 +18,6 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
     this.indexer = indexer;
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-
-    const defs = this.getSettingDefinitions() as unknown as (
-      | { type: 'group'; heading: string; items: { name?: string; desc?: string; render?: (s: Setting) => void }[] }
-      | { type?: undefined; name?: string; desc?: string; render?: (s: Setting) => void }
-    )[];
-
-    for (const def of defs) {
-       if (def.type === 'group') {
-           new Setting(containerEl).setName(def.heading).setHeading();
-           for (const item of def.items) {
-               if (!item.name) continue;
-               const s = new Setting(containerEl).setName(item.name);
-               if (item.desc) s.setDesc(item.desc);
-               if (item.render) {
-                   try {
-                       item.render(s);
-                   } catch (e) {
-                       console.error("Multi-Vault: Error rendering item", item.name, e);
-                   }
-               }
-           }
-       } else {
-           if (!def.name) continue;
-           const s = new Setting(containerEl).setName(def.name);
-           if (def.desc) s.setDesc(def.desc);
-           if (def.render) {
-               try {
-                   def.render(s);
-               } catch (e) {
-                   console.error("Multi-Vault: Error rendering setting", def.name, e);
-               }
-           }
-       }
-    }
-  }
-
   getSettingDefinitions(): SettingDefinitionItem[] {
     const vaults = this.vaultRegistry.getVaults();
     const configuredVaultItems: SettingGroupItem[] = vaults.length === 0 ? [
@@ -111,7 +72,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
               return button.onClick(async () => {
                 this.vaultRegistry.removeVault(vault.id);
                 await this.plugin.saveSettings();
-                this.display();
+                this.update();
               });
             });
         }
@@ -165,7 +126,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                       if (success) {
                         this.newVaultPath = "";
                         await this.plugin.saveSettings();
-                        this.display();
+                        this.update();
                       }
                     }
                   })
@@ -299,7 +260,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
       patterns.push(selectedItem);
       this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
       await this.plugin.saveSettings();
-      this.display();
+      this.update();
 
       await this.indexer.buildFullIndex(true);
       this.plugin.refreshSearchEngine();
