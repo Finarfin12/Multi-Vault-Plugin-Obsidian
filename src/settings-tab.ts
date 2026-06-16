@@ -34,13 +34,25 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                if (!item.name) continue;
                const s = new Setting(containerEl).setName(item.name);
                if (item.desc) s.setDesc(item.desc);
-               if (item.render) item.render(s);
+               if (item.render) {
+                   try {
+                       item.render(s);
+                   } catch (e) {
+                       console.error("Multi-Vault: Error rendering item", item.name, e);
+                   }
+               }
            }
        } else {
            if (!def.name) continue;
            const s = new Setting(containerEl).setName(def.name);
            if (def.desc) s.setDesc(def.desc);
-           if (def.render) def.render(s);
+           if (def.render) {
+               try {
+                   def.render(s);
+               } catch (e) {
+                   console.error("Multi-Vault: Error rendering setting", def.name, e);
+               }
+           }
        }
     }
   }
@@ -59,14 +71,25 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
         name: nameText,
         desc: vault.path,
         render: (setting: Setting) => {
-          setting
-            .addColorPicker(color => color
+          if (typeof setting.addColorPicker === 'function') {
+            setting.addColorPicker(color => color
               .setValue(vault.color || '#000000')
               .onChange(async (value) => {
                 this.vaultRegistry.updateVault(vault.id, { color: value });
                 await this.plugin.saveSettings();
               })
-            )
+            );
+          } else {
+            setting.addText(text => text
+              .setPlaceholder("#Hex")
+              .setValue(vault.color || '#000000')
+              .onChange(async (value) => {
+                this.vaultRegistry.updateVault(vault.id, { color: value });
+                await this.plugin.saveSettings();
+              })
+            );
+          }
+          setting
             .addText(text => text
               .setPlaceholder("Icon")
               .setValue(vault.icon || "")
@@ -88,7 +111,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
               return button.onClick(async () => {
                 this.vaultRegistry.removeVault(vault.id);
                 await this.plugin.saveSettings();
-                this.update();
+                this.display();
               });
             });
         }
@@ -142,7 +165,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                       if (success) {
                         this.newVaultPath = "";
                         await this.plugin.saveSettings();
-                        this.update();
+                        this.display();
                       }
                     }
                   })
@@ -276,7 +299,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
       patterns.push(selectedItem);
       this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
       await this.plugin.saveSettings();
-      this.update();
+      this.display();
 
       await this.indexer.buildFullIndex(true);
       this.plugin.refreshSearchEngine();
