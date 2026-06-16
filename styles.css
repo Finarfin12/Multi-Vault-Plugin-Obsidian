@@ -433,3 +433,60 @@ button.mvn-btn-small:hover {
   font-size: 0.85em;
   color: var(--text-muted);
 }
+
+/* --- Modern UI Overrides --- */
+.mvn-ui-modern .mvn-sp-result-item {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mvn-ui-modern .mvn-sp-result-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--interactive-accent);
+}
+
+.mvn-ui-modern .mvn-sp-select {
+  padding: 6px 16px;
+  border-radius: 20px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 32px;
+}
+
+.mvn-ui-modern .mvn-sp-select:hover, .mvn-ui-modern .mvn-sp-select:focus {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-primary);
+}
+
+.mvn-ui-modern .mvn-sp-input:focus {
+  box-shadow: 0 0 0 2px var(--interactive-accent), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--interactive-accent);
+}
+
+.mvn-ui-modern .mvn-sp-filter-bar {
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 25px !important;
+}
+
+.mvn-ui-modern .mvn-sp-results {
+  gap: 16px;
+}

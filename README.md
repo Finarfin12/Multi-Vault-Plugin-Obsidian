@@ -69,6 +69,7 @@ Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to 
 Go to **Settings > Multi-Vault Navigator** to configure:
 - **Vault List**: Toggle indexing for specific vaults, configure custom colors and icons, or remove them.
 - **Add Manual Vault**: Add an absolute path to a vault if it wasn't auto-detected.
+- **Appearance**: Choose between "Classic" and "Modern Card" layouts for search results.
 - **Refresh & Clear Index**: Manually rebuild or wipe the cross-vault index cache.
 - **Max Preview Characters**: Length of text snippets saved for search indexing.
 - **Global Exclude Patterns**: Comma-separated list of folder/file names to ignore across all vaults (e.g., `Private, secrets`).

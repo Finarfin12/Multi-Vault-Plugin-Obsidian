@@ -218,6 +218,27 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             }
           }
         ]
+      },
+      {
+        type: 'group',
+        heading: 'Appearance',
+        items: [
+          {
+            name: "Search Result Layout",
+            desc: "Choose the visual style for the search results in the Command Center.",
+            render: (setting: Setting) => {
+              setting.addDropdown(dropdown => {
+                dropdown.addOption('classic', 'Classic List');
+                dropdown.addOption('modern', 'Modern Card');
+                dropdown.setValue(this.plugin.settings.uiStyle || 'classic');
+                dropdown.onChange(async (value) => {
+                  this.plugin.settings.uiStyle = value as 'classic' | 'modern';
+                  await this.plugin.saveSettings();
+                });
+              });
+            }
+          }
+        ]
       }
     ];
   }

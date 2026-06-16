@@ -49,6 +49,9 @@ export class SearchPageView extends ItemView {
     // Layout: Sidebar (left) + Main (right)
     // Main Area
     const mainEl = container.createDiv({ cls: 'mvn-cc-main' });
+    if (this.plugin.settings.uiStyle === 'modern') {
+      mainEl.addClass('mvn-ui-modern');
+    }
 
     const searchHeader = mainEl.createDiv({ cls: 'mvn-sp-header' });
     searchHeader.createEl('h1', { text: 'Multi-Vault Navigator' });
