@@ -1,3 +1,5 @@
+
+
 # Multi-Vault Navigator
 
 
@@ -57,7 +59,7 @@ Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to 
 - **Switch Vault**
 - **Move/Copy Current File to Vault**
 - **Copy Cross-Vault Link for Current File**
-- **Find Duplicate Notes**
+- **Find Duplicate Notes Across Vaults**
 - **Open Global Tag Explorer**
 - **Open Cross-Vault Daily Notes**
 - **Refresh Index**
