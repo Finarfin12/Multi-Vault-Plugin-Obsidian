@@ -22,7 +22,11 @@ export class SearchEngine {
           return document.tags ? document.tags.join(' ') : '';
         }
         const val = document[fieldName as keyof IndexedFile];
-        return val !== undefined && val !== null ? String(val) : '';
+        if (val === undefined || val === null) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+        if (Array.isArray(val)) return val.map((v) => String(v)).join(' ');
+        return '';
       },
       searchOptions: {
         boost: {

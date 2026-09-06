@@ -153,7 +153,7 @@ export class SearchPageView extends ItemView {
 
     if (!query.trim() && tags.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
-      emptyState.createEl('div', { text: 'Start typing to search for files or filter by #tag...', cls: 'mvn-text-muted' });
+      emptyState.createDiv({ text: 'Start typing to search for files or filter by #tag...', cls: 'mvn-text-muted' });
       return;
     }
 
@@ -171,7 +171,7 @@ export class SearchPageView extends ItemView {
 
     if (results.length === 0) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
-      emptyState.createEl('div', { text: 'No matching results found.', cls: 'mvn-text-muted' });
+      emptyState.createDiv({ text: 'No matching results found.', cls: 'mvn-text-muted' });
       const btnSave = emptyState.createEl('button', { cls: 'mvn-btn-icon' });
       setIcon(btnSave.createSpan(), 'save');
       btnSave.createSpan({ text: 'Save this search' });
@@ -186,7 +186,7 @@ export class SearchPageView extends ItemView {
     }
 
     const resultHeader = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-result-header' });
-    resultHeader.createEl('span', { text: `Showing ${results.length} top results` });
+    resultHeader.createSpan({ text: `Showing ${results.length} top results` });
     
     // Add Save Search Button
     const btnSave = resultHeader.createEl('button', { cls: 'mvn-btn-small mvn-btn-icon' });

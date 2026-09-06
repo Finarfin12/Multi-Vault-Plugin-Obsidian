@@ -151,7 +151,7 @@ export class MarkdownParser {
 
   private extractOutgoingLinks(text: string): string[] {
     const links = new Set<string>();
-    const linkRegex = /\[\[([^\[\]]+?)\]\]/g;
+    const linkRegex = /\[\[([^\][]+?)\]\]/g;
     let m: RegExpExecArray | null;
     while ((m = linkRegex.exec(text)) !== null) {
       let inner = m[1].trim();

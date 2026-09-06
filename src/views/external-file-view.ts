@@ -67,17 +67,17 @@ export class ExternalFileView extends ItemView {
     
     // Metadata badge & actions
     const metaDiv = sizerInner.createDiv({ cls: 'mvn-external-meta', attr: { style: 'display: flex; align-items: center; gap: 10px; margin-bottom: 30px; margin-top: -10px;' } });
-    metaDiv.createEl('span', { text: `Read-Only • [${this.file.vaultName}]`, cls: 'mvn-text-muted', attr: { style: 'font-size: 0.85em; opacity: 0.7;' } });
+    metaDiv.createSpan({ text: `Read-Only • [${this.file.vaultName}]`, cls: 'mvn-text-muted', attr: { style: 'font-size: 0.85em; opacity: 0.7;' } });
 
     const inlineActions = metaDiv.createDiv({ cls: 'mvn-external-inline-actions', attr: { style: 'display: flex; gap: 5px;' } });
     
-    const btnOpen = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Open in Source Vault' } });
+    const btnOpen = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Open in Source Vault' } });
     setIcon(btnOpen, "external-link");
     btnOpen.onclick = () => {
       window.open(`obsidian://open?vault=${encodeURIComponent(this.file!.vaultName)}&file=${encodeURIComponent(this.file!.relativePath)}`);
     };
 
-    const btnLink = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Copy Cross-Vault Link' } });
+    const btnLink = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy Cross-Vault Link' } });
     setIcon(btnLink, "link");
     btnLink.onclick = async () => {
       const linkText = `[[${this.file!.vaultName}::${this.file!.basename}]]`;
@@ -85,7 +85,7 @@ export class ExternalFileView extends ItemView {
       new Notice("Cross-Vault Link copied to clipboard!");
     };
 
-    const btnCopyEdit = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Copy to Current Vault & Edit' } });
+    const btnCopyEdit = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy to Current Vault & Edit' } });
     setIcon(btnCopyEdit, "pencil");
     btnCopyEdit.onclick = () => {
       void this.copyToCurrentVaultAndEdit();

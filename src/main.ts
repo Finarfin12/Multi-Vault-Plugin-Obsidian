@@ -212,10 +212,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
                 replacements.push(activeDocument.createTextNode(text.substring(lastIndex, match.index)));
              }
              
-             const a = activeDocument.createElement('a');
-             a.addClass('internal-link');
-             a.addClass('mvn-cross-vault-link');
-             a.innerText = noteName;
+             const a = createEl('a', { text: noteName, cls: 'internal-link mvn-cross-vault-link' });
              a.onclick = (e) => {
                 e.preventDefault();
                 const files = this.indexer.getIndexedFiles();

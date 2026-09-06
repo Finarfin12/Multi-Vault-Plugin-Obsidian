@@ -116,7 +116,7 @@ export class DuplicateDetectorModal extends Modal {
     });
 
     const ops = this.lineDiff(aLines, bLines);
-    const pre = output.createEl('div', { cls: 'mvn-diff-lines' });
+    const pre = output.createDiv({ cls: 'mvn-diff-lines' });
     for (const op of ops) {
       const line = pre.createDiv({ cls: `mvn-diff-line mvn-diff-${op.kind}` });
       line.createSpan({ text: op.kind === 'del' ? '− ' : op.kind === 'add' ? '+ ' : '  ', cls: 'mvn-diff-gutter' });
