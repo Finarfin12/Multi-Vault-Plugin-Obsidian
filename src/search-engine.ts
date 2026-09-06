@@ -115,4 +115,37 @@ export class SearchEngine {
     // Sort by mtime descending
     return files.sort((a, b) => b.mtime - a.mtime).slice(0, limit);
   }
+
+  /**
+   * Find cross-vault backlinks: files whose outgoing wikilinks point to `target`.
+   * Uses indexed `outgoingLinks` when available, with a contentPreview
+   * fallback for caches built before link extraction existed.
+   */
+  public findBacklinks(target: IndexedFile, limit: number = 20): IndexedFile[] {
+    const targetName = target.basename.toLowerCase();
+    const crossVaultRef = `${target.vaultName.toLowerCase()}::${targetName}`;
+    const results: IndexedFile[] = [];
+
+    for (const f of this.indexedFiles) {
+      if (f.id === target.id) continue;
+
+      const links = f.outgoingLinks ?? [];
+      if (links.includes(targetName) || links.includes(crossVaultRef)) {
+        results.push(f);
+        continue;
+      }
+
+      // Fallback for old caches without outgoingLinks
+      if (!f.outgoingLinks && f.contentPreview) {
+        const preview = f.contentPreview.toLowerCase();
+        if (preview.includes(`[[${targetName}`) || preview.includes(`[[${crossVaultRef}`)) {
+          results.push(f);
+        }
+      }
+
+      if (results.length >= limit) break;
+    }
+
+    return results;
+  }
 }

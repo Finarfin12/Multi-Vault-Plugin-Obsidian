@@ -46,6 +46,10 @@ export class MarkdownParser {
 
     const tags = Array.from(new Set([...inlineTags, ...frontmatterTags]));
 
+    // Extract outgoing wikilinks (for cross-vault backlinks).
+    // Supports [[Note]], [[Note|alias]], [[Note#heading]], [[Vault::Note]].
+    const outgoingLinks = this.extractOutgoingLinks(textContent);
+
     // Generate preview
     const preview = textContent
       .replace(/^#{1,6}\s+/gm, '') // remove heading markers
@@ -64,6 +68,7 @@ export class MarkdownParser {
       frontmatter,
       headings,
       tags,
+      outgoingLinks,
       mtime: file.mtime,
       size: file.size,
       contentPreview: preview
@@ -142,5 +147,27 @@ export class MarkdownParser {
     }
 
     return [];
+  }
+
+  private extractOutgoingLinks(text: string): string[] {
+    const links = new Set<string>();
+    const linkRegex = /\[\[([^\[\]]+?)\]\]/g;
+    let m: RegExpExecArray | null;
+    while ((m = linkRegex.exec(text)) !== null) {
+      let inner = m[1].trim();
+      if (!inner) continue;
+      // Strip alias (|alias) and heading (#heading)
+      inner = inner.split('|')[0].split('#')[0].trim();
+      if (!inner) continue;
+      // Cross-vault syntax [[Vault::Note]] -> take Note part
+      if (inner.includes('::')) {
+        const parts = inner.split('::');
+        inner = parts[parts.length - 1].trim();
+      }
+      // Strip .md suffix and folders, keep basename
+      inner = inner.replace(/\.md$/i, '').split('/').pop()?.trim() ?? '';
+      if (inner) links.add(inner.toLowerCase());
+    }
+    return Array.from(links);
   }
 }

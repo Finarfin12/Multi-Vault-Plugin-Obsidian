@@ -20,6 +20,7 @@ export interface IndexedFile {
   frontmatter?: Record<string, unknown>;
   headings?: string[];
   tags?: string[];
+  outgoingLinks?: string[];
   mtime: number;
   size: number;
   contentPreview?: string;

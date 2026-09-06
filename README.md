@@ -12,7 +12,8 @@
 To comply with the [Obsidian Developer Policies](https://docs.obsidian.md/Plugins/Releasing/Developer+policies), please review the following disclosures regarding this plugin:
 
 - **Accessing files outside of Obsidian vaults**: This plugin requires accessing files outside of the currently active Obsidian vault. 
-  - **Why this is needed**: This plugin's core feature is searching and previewing notes from your *other* Obsidian vaults. To achieve this, it uses Node's native `fs` module to read the markdown contents of vaults you have configured or that were automatically detected from your OS's global Obsidian configuration (`obsidian.json`). 
+  - **Why this is needed**: This plugin's core feature is searching and previewing notes from your *other* Obsidian vaults. To achieve this, it uses Node's native `fs` module to read the markdown contents of vaults you have configured or that were automatically detected from your OS's global Obsidian configuration (`obsidian.json`). Backlink detection and duplicate comparison also read those files locally to match `[[wikilinks]]`.
+  - **Writing files**: The plugin never silently edits notes in your other vaults. Writes only happen (a) inside the active vault via the Obsidian Vault API when you use "Copy to Current Vault & Edit", or (b) when you explicitly confirm a Move/Copy operation to another vault.
   - **Privacy**: All operations are 100% local. No files, metadata, or telemetry are ever sent over the internet or uploaded to any server.
 
 ---
@@ -31,7 +32,8 @@ Instead of remembering which vault a note is saved in, use the Command Center da
 Natively, Obsidian does not allow you to open a note from outside the active vault in a tab. This plugin solves that safely:
 - When clicking a search result from another vault, the note opens in a **new tab** within your current vault.
 - The note is displayed in a native-feeling **Read-Only Mode** with full markdown rendering.
-- Includes actions to quickly "Open in Source Vault" or "Copy Cross-Vault Link."
+- Includes actions to quickly "Open in Source Vault", "Copy Cross-Vault Link", or "Copy to Current Vault & Edit" (copies into the active vault via the Vault API — the source vault is never modified).
+- Each preview now shows a **Backlinks** section listing cross-vault notes that link to it.
 
 ### 3. Natural Cross-Vault Links
 Write `[[VaultName::NoteTitle]]` in any note. The plugin parses these references and allows you to click them to instantly open the cross-vault note in the read-only preview.
@@ -44,7 +46,7 @@ Write `[[VaultName::NoteTitle]]` in any note. The plugin parses these references
 Easily move or copy a note from your current vault to another vault. The plugin includes a Smart Inbox Router that suggests the most relevant destination vault based on the tags present in your note.
 
 ### 6. Duplicate Note Detector
-Scan all your connected vaults to find notes with the exact same name, helping you merge scattered information.
+Scan all your connected vaults to find notes with the exact same name, helping you merge scattered information. Each duplicate group now includes a **Compare** view with a line-by-line diff.
 
 ---
 

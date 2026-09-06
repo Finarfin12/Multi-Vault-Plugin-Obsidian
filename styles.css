@@ -684,3 +684,103 @@ button.mvn-btn-small:hover {
 .mvn-ui-modern .mvn-sp-results {
   gap: 16px;
 }
+
+/* Cross-vault backlinks */
+.mvn-backlinks {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.mvn-backlinks-header {
+  font-size: 1em;
+  margin-bottom: 10px;
+}
+
+.mvn-backlinks-empty {
+  font-size: 0.85em;
+}
+
+.mvn-backlinks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mvn-backlinks-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mvn-backlinks-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.mvn-backlinks-badge {
+  font-size: 0.75em;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.mvn-backlinks-title {
+  font-weight: 500;
+}
+
+/* Duplicate diff */
+.mvn-duplicate-compare-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.mvn-duplicate-select {
+  flex: 1;
+  min-width: 180px;
+}
+
+.mvn-diff-output {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background-color: var(--background-primary);
+}
+
+.mvn-diff-identical {
+  color: var(--text-success, green);
+  font-weight: 600;
+}
+
+.mvn-diff-lines {
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mvn-diff-line {
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.mvn-diff-gutter {
+  opacity: 0.6;
+  user-select: none;
+}
+
+.mvn-diff-del {
+  background-color: rgba(255, 0, 0, 0.08);
+}
+
+.mvn-diff-add {
+  background-color: rgba(0, 128, 0, 0.12);
+}

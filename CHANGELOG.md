@@ -2,6 +2,15 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.3.0] - 2026-09-06
+### Added
+- **Cross-Vault Backlinks**: External file view now shows a "Backlinks" section listing notes across all vaults that link to the open note (supports `[[Note]]`, `[[Note|alias]]`, `[[Note#heading]]`, and `[[Vault::Note]]`). Link targets are extracted at index time into a new `outgoingLinks` field.
+- **Copy to Current Vault & Edit**: New action in the external file view that copies the read-only note into the active vault via the Vault API and opens it for editing. The source vault is never modified.
+- **Duplicate Compare/Diff**: Duplicate Detector groups now include file selectors plus a Compare button rendering a local line-by-line diff (identical-file detection, 400-line cap for performance).
+
+### Changed
+- **Disclosure**: README now documents that backlink/duplicate features read other vaults locally, and that writes only target the active vault (Vault API) or explicit Move/Copy confirmations.
+
 ## [2.1.0] - 2026-06-06 (Feature V0.2 & Security Audit)
 ### Added
 - **Tag Filter**: Type `#tag` directly inside the Command Center search bar to filter results exclusively by metadata/inline tags.

@@ -85,12 +85,92 @@ export class ExternalFileView extends ItemView {
       new Notice("Cross-Vault Link copied to clipboard!");
     };
 
+    const btnCopyEdit = inlineActions.createEl('span', { cls: 'clickable-icon', attr: { 'aria-label': 'Copy to Current Vault & Edit' } });
+    setIcon(btnCopyEdit, "pencil");
+    btnCopyEdit.onclick = () => {
+      void this.copyToCurrentVaultAndEdit();
+    };
+
     const contentDiv = sizerInner.createDiv();
     // Render the markdown content
     await MarkdownRenderer.render(this.app, this.content, contentDiv, '', this);
     
     // Smart Image & Link Resolver
     this.resolveMediaAndLinks(contentDiv);
+
+    // Cross-vault backlinks (what links here)
+    this.renderBacklinks(sizerInner);
+  }
+
+  /**
+   * Copy the external note into the ACTIVE vault via the Vault API
+   * and open it for editing. Writes never target other vaults directly,
+   * which keeps this compliant with Obsidian review expectations
+   * (no silent external writes, no bypass of Sync/conflict handling).
+   */
+  private async copyToCurrentVaultAndEdit(): Promise<void> {
+    if (!this.file) return;
+    if (this.content.startsWith('> [!ERROR]')) {
+      new Notice('Cannot copy: failed to read source file.');
+      return;
+    }
+
+    const base = this.file.basename.replace(/[\\/:*?"<>|]/g, '').trim() || 'Untitled';
+    const candidates = [
+      `${base}.md`,
+      `${base} (from ${this.file.vaultName}).md`,
+    ];
+    for (let i = 2; i <= 50; i++) {
+      candidates.push(`${base} (from ${this.file.vaultName} ${i}).md`);
+    }
+
+    let targetPath: string | null = null;
+    for (const c of candidates) {
+      if (!this.app.vault.getAbstractFileByPath(c)) {
+        targetPath = c;
+        break;
+      }
+    }
+    if (!targetPath) {
+      new Notice('Could not find a free filename in the current vault.');
+      return;
+    }
+
+    try {
+      const created = await this.app.vault.create(targetPath, this.content);
+      await this.app.workspace.openLinkText(created.path, '', true);
+      new Notice(`Copied to current vault as ${targetPath}. Source vault untouched.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      new Notice(`Failed to copy file: ${msg}`);
+    }
+  }
+
+  private renderBacklinks(parent: HTMLElement): void {
+    if (!this.file) return;
+    const backlinks = this.searchEngine.findBacklinks(this.file, 20);
+
+    const section = parent.createDiv({ cls: 'mvn-backlinks' });
+    section.createEl('h3', { text: `Backlinks (${backlinks.length})`, cls: 'mvn-backlinks-header' });
+
+    if (backlinks.length === 0) {
+      section.createEl('p', {
+        text: 'No cross-vault links to this note found in the index. Refresh the index if you recently added links.',
+        cls: 'mvn-text-muted mvn-backlinks-empty'
+      });
+      return;
+    }
+
+    const list = section.createDiv({ cls: 'mvn-backlinks-list' });
+    for (const b of backlinks) {
+      const item = list.createDiv({ cls: 'mvn-backlinks-item' });
+      item.createSpan({ text: `[${b.vaultName}]`, cls: 'mvn-backlinks-badge' });
+      item.createSpan({ text: ` ${b.basename}`, cls: 'mvn-backlinks-title' });
+      item.createEl('small', { text: ` ${b.relativePath}`, cls: 'mvn-text-muted' });
+      item.addEventListener('click', () => {
+        void this.fileOpener.openFile(b);
+      });
+    }
   }
 
   private resolveMediaAndLinks(container: HTMLElement) {
