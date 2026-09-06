@@ -105,7 +105,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             render: (setting: Setting) => {
               setting
                 .addText(text => text
-                  .setPlaceholder("C:/My/Vault")
+                  .setPlaceholder("C:/my/vault")
                   .setValue(this.newVaultPath)
                   .onChange(value => {
                     this.newVaultPath = value;
@@ -144,7 +144,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             desc: "Wipe the cross-vault index cache entirely.",
             render: (setting: Setting) => {
               setting.addButton(btn => btn
-                .setButtonText("Clear Cache")
+                .setButtonText("Clear cache")
                 .setDestructive()
                 .onClick(async () => {
                   await this.indexer.clearIndex();
@@ -158,7 +158,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             desc: "Re-scan all enabled vaults and rebuild the cross-vault index.",
             render: (setting: Setting) => {
               setting.addButton(btn => btn
-                .setButtonText("Refresh Now")
+                .setButtonText("Refresh now")
                 .setCta()
                 .onClick(async () => {
                   await this.indexer.buildFullIndex(true);
@@ -203,7 +203,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             render: (setting: Setting) => {
               setting
                 .addTextArea(text => text
-                  .setPlaceholder("Private, Secrets, hidden")
+                  .setPlaceholder("Private, secrets, hidden")
                   .setValue((this.plugin.settings.indexOptions.globalExcludePatterns || []).join(', '))
                   .onChange(async (value) => {
                     const patterns = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -219,7 +219,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                   })
                 )
                 .addButton(btn => btn
-                  .setButtonText("Select File/Folder")
+                  .setButtonText("Select file/folder")
                   .onClick(() => {
                     new ExcludeSuggestModal(this.app, this.indexer, (selectedItem) => {
                       void this.addExcludePattern(selectedItem);
@@ -239,8 +239,8 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             desc: "Choose the visual style for the search results in the Command Center.",
             render: (setting: Setting) => {
               setting.addDropdown(dropdown => {
-                dropdown.addOption('classic', 'Classic List');
-                dropdown.addOption('modern', 'Modern Card');
+                dropdown.addOption('classic', 'Classic list');
+                dropdown.addOption('modern', 'Modern card');
                 dropdown.setValue(this.plugin.settings.uiStyle || 'classic');
                 dropdown.onChange(async (value) => {
                   this.plugin.settings.uiStyle = value as 'classic' | 'modern';

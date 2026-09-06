@@ -20,7 +20,7 @@ export class DailyDashboardView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Cross-Vault Daily Notes";
+    return "Cross-vault daily notes";
   }
 
   getIcon(): string {
@@ -32,7 +32,7 @@ export class DailyDashboardView extends ItemView {
     container.empty();
     container.addClass('mvn-daily-dashboard-container');
 
-    container.createEl('h2', { text: 'Cross-Vault Daily Notes' });
+    container.createEl('h2', { text: 'Cross-vault daily notes' });
     
     // Pattern for YYYY-MM-DD
     const dailyRegex = /^(\d{4}-\d{2}-\d{2})/;
@@ -52,7 +52,7 @@ export class DailyDashboardView extends ItemView {
     });
 
     if (dailyNotes.size === 0) {
-       container.createEl('p', { text: 'No daily notes (YYYY-MM-DD) found.' });
+       container.createEl('p', { text: 'No daily notes (yyyy-mm-dd) found.' });
        return;
     }
 

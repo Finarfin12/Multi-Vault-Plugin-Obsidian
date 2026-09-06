@@ -17,7 +17,7 @@ export class DuplicateDetectorModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h2", { text: "Duplicate Note Detector" });
+    contentEl.createEl("h2", { text: "Duplicate note detector" });
     contentEl.createEl("p", { text: "Detects files with the exact same name across different vaults." });
 
     const files = this.indexer.getIndexedFiles();

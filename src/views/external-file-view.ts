@@ -27,7 +27,7 @@ export class ExternalFileView extends ItemView {
     if (this.file) {
       return `[${this.file.vaultName}] ${this.file.basename}`;
     }
-    return "External File";
+    return "External file";
   }
 
   getIcon(): string {
@@ -71,21 +71,21 @@ export class ExternalFileView extends ItemView {
 
     const inlineActions = metaDiv.createDiv({ cls: 'mvn-external-inline-actions', attr: { style: 'display: flex; gap: 5px;' } });
     
-    const btnOpen = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Open in Source Vault' } });
+    const btnOpen = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Open in source vault' } });
     setIcon(btnOpen, "external-link");
     btnOpen.onclick = () => {
       window.open(`obsidian://open?vault=${encodeURIComponent(this.file!.vaultName)}&file=${encodeURIComponent(this.file!.relativePath)}`);
     };
 
-    const btnLink = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy Cross-Vault Link' } });
+    const btnLink = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy cross-vault link' } });
     setIcon(btnLink, "link");
     btnLink.onclick = async () => {
       const linkText = `[[${this.file!.vaultName}::${this.file!.basename}]]`;
       await navigator.clipboard.writeText(linkText);
-      new Notice("Cross-Vault Link copied to clipboard!");
+      new Notice("Cross-vault link copied to clipboard!");
     };
 
-    const btnCopyEdit = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy to Current Vault & Edit' } });
+    const btnCopyEdit = inlineActions.createSpan({ cls: 'clickable-icon', attr: { 'aria-label': 'Copy to current vault & edit' } });
     setIcon(btnCopyEdit, "pencil");
     btnCopyEdit.onclick = () => {
       void this.copyToCurrentVaultAndEdit();

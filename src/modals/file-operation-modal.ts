@@ -27,7 +27,7 @@ export class FileOperationModal extends Modal {
       return;
     }
 
-    contentEl.createEl("h2", { text: "Move / Copy File to Another Vault" });
+    contentEl.createEl("h2", { text: "Move / copy file to another vault" });
     contentEl.createEl("p", { text: `File: ${activeFile.path}` });
 
     const vaults = this.vaultRegistry.getVaults();
@@ -86,7 +86,7 @@ export class FileOperationModal extends Modal {
     }
 
     new Setting(contentEl)
-      .setName("Target Vault")
+      .setName("Target vault")
       .addDropdown(drop => {
         otherVaults.forEach(v => {
            const label = v.id === recommendedVaultId ? `✨ ${v.name} (Recommended)` : v.name;
@@ -101,8 +101,8 @@ export class FileOperationModal extends Modal {
     new Setting(contentEl)
       .setName("Operation")
       .addDropdown(drop => drop
-        .addOption('move', 'Move File')
-        .addOption('copy', 'Copy File')
+        .addOption('move', 'Move file')
+        .addOption('copy', 'Copy file')
         .setValue('move')
         .onChange(value => {
           this.operation = value as 'move' | 'copy';
@@ -123,7 +123,7 @@ export class FileOperationModal extends Modal {
           if ('getBasePath' in adapter && typeof (adapter as unknown as FileSystemAdapterWithBasePath).getBasePath === 'function') {
              sourcePath = path.join((adapter as unknown as FileSystemAdapterWithBasePath).getBasePath(), activeFile.path);
           } else {
-             new Notice("Error: Adapter doesn't support getBasePath().");
+             new Notice("Error: could not determine the vault path.");
              return;
           }
           const targetPath = path.join(targetVault.path, activeFile.name);

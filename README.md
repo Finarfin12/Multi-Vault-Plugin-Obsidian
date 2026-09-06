@@ -53,16 +53,17 @@ Scan all your connected vaults to find notes with the exact same name, helping y
 ## Commands
 
 Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to see available commands:
-- **Cross-Vault Command Center (Search Page)**
-- **Search All Vaults**
-- **Recent Files**
-- **Switch Vault**
-- **Move/Copy Current File to Vault**
-- **Copy Cross-Vault Link for Current File**
-- **Find Duplicate Notes**
-- **Open Global Tag Explorer**
-- **Open Cross-Vault Daily Notes**
-- **Refresh Index**
+- **Open search page** (Cross-Vault Command Center)
+- **Search all vaults**
+- **Recent files**
+- **Switch vault**
+- **Move/copy current file to vault**
+- **Copy cross-vault link for current file**
+- **Find duplicate notes across vaults**
+- **Open global tag explorer**
+- **Open cross-vault daily notes**
+- **Refresh index**
+- **Clear cross-vault index**
 
 ---
 

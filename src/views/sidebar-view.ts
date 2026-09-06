@@ -20,7 +20,7 @@ export class SidebarView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Multi-Vault Pins & Saves";
+    return "Multi-vault pins & saves";
   }
 
   getIcon(): string {
@@ -92,7 +92,7 @@ export class SidebarView extends ItemView {
                  await this.app.workspace.revealLeaf(leaves[0]);
                  view.setSearchQuery(ss.query);
               } else {
-                 new Notice("Please open the Cross-Vault Command Center first.");
+                 new Notice("Please open the cross-vault command center first.");
               }
              })();
            };

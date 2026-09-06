@@ -2,6 +2,12 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.3.1] - 2026-09-06
+### Changed
+- **Review scorecard compliance**: All user-facing strings now use sentence case
+  per the `obsidianmd/ui/sentence-case` guideline (command names, buttons,
+  placeholders, view titles). No functional changes.
+
 ## [2.3.0] - 2026-09-06
 ### Added
 - **Cross-Vault Backlinks**: External file view now shows a "Backlinks" section listing notes across all vaults that link to the open note (supports `[[Note]]`, `[[Note|alias]]`, `[[Note#heading]]`, and `[[Vault::Note]]`). Link targets are extracted at index time into a new `outgoingLinks` field.

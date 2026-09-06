@@ -64,14 +64,14 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       (leaf) => new SidebarView(leaf, this, this.fileOpener)
     );
 
-    this.addRibbonIcon('library', 'Multi-Vault Sidebar', async () => {
+    this.addRibbonIcon('library', 'Multi-vault sidebar', async () => {
        await this.activateSidebar();
     });
 
     // Register Modals Commands
     this.addCommand({
       id: 'multi-vault-search-page',
-      name: 'Open Search Page',
+      name: 'Open search page',
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
@@ -81,7 +81,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-tag-explorer',
-      name: 'Open Global Tag Explorer',
+      name: 'Open global tag explorer',
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_TAG_EXPLORER, active: true });
@@ -91,7 +91,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-daily-dashboard',
-      name: 'Open Cross-Vault Daily Notes',
+      name: 'Open cross-vault daily notes',
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_DAILY_DASHBOARD, active: true });
@@ -101,7 +101,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-search',
-      name: 'Search All Vaults',
+      name: 'Search all vaults',
       callback: () => {
         new SearchModal(this.app, this.searchEngine, this.fileOpener).open();
       }
@@ -109,7 +109,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-recent',
-      name: 'Recent Files',
+      name: 'Recent files',
       callback: () => {
         new RecentFilesModal(this.app, this.searchEngine, this.fileOpener).open();
       }
@@ -117,7 +117,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-switch',
-      name: 'Switch Vault',
+      name: 'Switch vault',
       callback: () => {
         new SwitchVaultModal(this.app, this.vaultRegistry, this.fileOpener).open();
       }
@@ -125,7 +125,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-refresh-index',
-      name: 'Refresh Index',
+      name: 'Refresh index',
       callback: async () => {
         await this.indexer.buildFullIndex(true);
         this.refreshSearchEngine();
@@ -134,7 +134,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-move-copy',
-      name: 'Move/Copy Current File to Vault',
+      name: 'Move/copy current file to vault',
       callback: () => {
         new FileOperationModal(this.app, this.vaultRegistry, this.indexer).open();
       }
@@ -142,7 +142,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-duplicates',
-      name: 'Find Duplicate Notes Across Vaults',
+      name: 'Find duplicate notes across vaults',
       callback: () => {
          new DuplicateDetectorModal(this.app, this.indexer, this.fileOpener).open();
       }
@@ -150,7 +150,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-copy-link',
-      name: 'Copy Cross-Vault Link for Current File',
+      name: 'Copy cross-vault link for current file',
       callback: async () => {
          const activeFile = this.app.workspace.getActiveFile();
          if (!activeFile) {
@@ -166,7 +166,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     this.addCommand({
       id: 'multi-vault-clear-index',
-      name: 'Clear Cross-Vault Index',
+      name: 'Clear cross-vault index',
       callback: async () => {
         await this.indexer.clearIndex();
       }
@@ -257,7 +257,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.addSettingTab(new MultiVaultSettingsTab(this.app, this, this.vaultRegistry, this.indexer));
 
     // Add ribbon icon
-    this.addRibbonIcon('search', 'Multi-Vault Navigator', async () => {
+    this.addRibbonIcon('search', 'Multi-vault navigator', async () => {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_SEARCH_PAGE, active: true });
       await this.app.workspace.revealLeaf(leaf);

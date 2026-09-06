@@ -17,7 +17,7 @@ export class TagExplorerView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Global Tag Explorer";
+    return "Global tag explorer";
   }
 
   getIcon(): string {
@@ -29,7 +29,7 @@ export class TagExplorerView extends ItemView {
     container.empty();
     container.addClass('mvn-tag-explorer-container');
 
-    container.createEl('h2', { text: 'Global Tag Explorer' });
+    container.createEl('h2', { text: 'Global tag explorer' });
     container.createEl('p', { text: 'All tags across your configured vaults:', cls: 'mvn-text-muted' });
 
     const tagCounts = new Map<string, number>();

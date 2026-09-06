@@ -34,7 +34,7 @@ export class SearchPageView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Cross-Vault Command Center";
+    return "Cross-vault command center";
   }
 
   getIcon(): string {
@@ -54,7 +54,7 @@ export class SearchPageView extends ItemView {
     }
 
     const searchHeader = mainEl.createDiv({ cls: 'mvn-sp-header' });
-    searchHeader.createEl('h1', { text: 'Multi-Vault Navigator' });
+    searchHeader.createEl('h1', { text: 'Multi-vault navigator' });
     searchHeader.createEl('p', { text: 'Search across all your vaults instantly.' });
 
     const searchBox = searchHeader.createDiv({ cls: 'mvn-sp-search-box' });
@@ -105,7 +105,7 @@ export class SearchPageView extends ItemView {
     const filterBar = mainEl.createDiv({ cls: 'mvn-sp-filter-bar', attr: { style: 'display: flex; gap: 10px; margin-bottom: 10px;' } });
     
     this.vaultFilterEl = filterBar.createEl('select', { cls: 'mvn-sp-select' });
-    this.vaultFilterEl.createEl('option', { value: 'all', text: 'All Vaults' });
+    this.vaultFilterEl.createEl('option', { value: 'all', text: 'All vaults' });
     this.plugin.vaultRegistry.getEnabledVaults().forEach(v => {
         this.vaultFilterEl.createEl('option', { value: v.id, text: v.name });
     });

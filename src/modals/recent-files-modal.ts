@@ -11,7 +11,7 @@ export class RecentFilesModal extends SuggestModal<IndexedFile> {
     super(app);
     this.searchEngine = searchEngine;
     this.fileOpener = fileOpener;
-    this.setPlaceholder("Recent files across vaults... (type to filter by vault)");
+    this.setPlaceholder("Recent files across vaults... (Type to filter by vault)");
   }
 
   getSuggestions(query: string): IndexedFile[] {
