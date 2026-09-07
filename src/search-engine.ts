@@ -79,8 +79,9 @@ export class SearchEngine {
     }
 
     let results = this.miniSearch.search(query, {
-      filter: (result) => {
-        const file = this.fileMap.get(String(result.id));
+      filter: (result: SearchResult) => {
+        const id = result.id as string;
+        const file = this.fileMap.get(id);
         if (!file) return false;
 
         if (options?.vaultId && file.vaultId !== options.vaultId) {
@@ -104,9 +105,12 @@ export class SearchEngine {
     }
 
     // Map back to MultiVaultSearchResult
-    return results.flatMap(r => {
-      const file = this.fileMap.get(String(r.id));
-      return file ? [{ ...r, file }] : [];
+    // MiniSearch's SearchResult.id is typed as `any`; cast to string explicitly.
+    return results.flatMap((r: SearchResult): MultiVaultSearchResult[] => {
+      const id = r.id as string;
+      const file = this.fileMap.get(id);
+      if (!file) return [];
+      return [{ id, terms: r.terms, queryTerms: r.queryTerms, score: r.score, match: r.match, file }];
     });
   }
 
