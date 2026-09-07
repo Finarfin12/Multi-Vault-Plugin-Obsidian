@@ -2,6 +2,7 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+
 ## [2.3.3] - 2026-09-07
 ### Fixed
 - `[[Vault::Note]]` cross-vault links now open the target note in Reading View.
