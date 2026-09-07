@@ -2,6 +2,11 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.3.2] - 2026-09-07
+### Fixed
+- Review-bot code reading warnings via minimal ambient Node.js type
+  declarations (`src/node-types.d.ts`). No functional changes.
+
 ## [2.3.1] - 2026-09-06
 ### Changed
 - **Review scorecard compliance**: All user-facing strings now use sentence case
