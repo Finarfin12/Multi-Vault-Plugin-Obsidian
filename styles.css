@@ -54,6 +54,17 @@
 
 /* External File View - Intentionally left blank for native rendering */
 
+/* Cross-vault links (rewritten from core's unresolved anchors) */
+.mvn-cross-vault-link {
+  color: var(--link-color);
+  text-decoration-line: var(--link-decoration);
+  cursor: var(--cursor-link);
+}
+
+.mvn-cross-vault-link:hover {
+  color: var(--link-color-hover);
+}
+
 /* Search Page View (Google-like) */
 .mvn-cc-main {
   padding: 40px;

@@ -4,6 +4,7 @@ import { VaultRegistry } from './vault-registry';
 import { Indexer } from './indexer/indexer';
 import { SearchEngine } from './search-engine';
 import { FileOpener } from './file-opener';
+import { registerCrossVaultLinks } from './cross-vault-links';
 import { MultiVaultSettingsTab } from './settings-tab';
 import { SearchModal } from './modals/search-modal';
 import { SwitchVaultModal } from './modals/switch-vault-modal';
@@ -188,70 +189,11 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
        }
     });
 
-    // Register Natural Cross-Vault Links Post Processor
-    this.registerMarkdownPostProcessor((element, context) => {
-       const walker = activeDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
-       let node;
-       const nodesToReplace: { node: Node, parent: Node, replacements: Node[] }[] = [];
-
-       const regex = /\[\[(.*?)::(.*?)\]\]/g;
-
-       while ((node = walker.nextNode()) !== null) {
-          const text = node.textContent || '';
-          let match;
-          let lastIndex = 0;
-          const replacements: Node[] = [];
-          
-          let found = false;
-          while ((match = regex.exec(text)) !== null) {
-             found = true;
-             const vaultName = match[1].trim();
-             const noteName = match[2].trim();
-             
-             if (match.index > lastIndex) {
-                replacements.push(activeDocument.createTextNode(text.substring(lastIndex, match.index)));
-             }
-             
-             const a = createEl('a', { text: noteName, cls: 'internal-link mvn-cross-vault-link' });
-             a.onclick = (e) => {
-                e.preventDefault();
-                const files = this.indexer.getIndexedFiles();
-                const target = files.find(f => f.vaultName.toLowerCase() === vaultName.toLowerCase() && f.basename.toLowerCase() === noteName.toLowerCase());
-                if (target) {
-                   void this.fileOpener.openFile(target);
-                } else {
-                   new Notice(`File "${noteName}" not found in vault "${vaultName}".`);
-                }
-             };
-             
-             a.oncontextmenu = (e) => {
-                e.preventDefault();
-                const files = this.indexer.getIndexedFiles();
-                const target = files.find(f => f.vaultName.toLowerCase() === vaultName.toLowerCase() && f.basename.toLowerCase() === noteName.toLowerCase());
-                if (target) {
-                   window.open(`obsidian://open?vault=${encodeURIComponent(target.vaultName)}&file=${encodeURIComponent(target.relativePath)}`);
-                }
-             };
-
-             replacements.push(a);
-             lastIndex = regex.lastIndex;
-          }
-
-          if (found) {
-             if (lastIndex < text.length) {
-                replacements.push(activeDocument.createTextNode(text.substring(lastIndex)));
-             }
-             if (node.parentNode) {
-                nodesToReplace.push({ node, parent: node.parentNode, replacements });
-             }
-          }
-       }
-
-       for (const { node, parent, replacements } of nodesToReplace) {
-          replacements.forEach(r => parent.insertBefore(r, node));
-          parent.removeChild(node);
-       }
-    });
+    // Cross-vault [[Vault::Note]] links (Reading View anchor rewrite).
+    // Core parses these into unresolved internal-link anchors before
+    // postprocessors run, so rewrite those anchors instead of scanning
+    // raw text (which never matches).
+    registerCrossVaultLinks(this);
 
     // Add settings tab
     this.addSettingTab(new MultiVaultSettingsTab(this.app, this, this.vaultRegistry, this.indexer));

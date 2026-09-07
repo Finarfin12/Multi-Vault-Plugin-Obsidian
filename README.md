@@ -36,7 +36,7 @@ Natively, Obsidian does not allow you to open a note from outside the active vau
 - Each preview now shows a **Backlinks** section listing cross-vault notes that link to it.
 
 ### 3. Natural Cross-Vault Links
-Write `[[VaultName::NoteTitle]]` in any note. The plugin parses these references and allows you to click them to instantly open the cross-vault note in the read-only preview.
+Write `[[VaultName::NoteTitle]]` in any note. In Reading View the plugin rewrites these references into clickable links that instantly open the cross-vault note in the read-only preview (right-click opens the source vault). Alias (`[[Vault::Note|text]]`), heading, and path forms are supported. Click-through in Live Preview is not yet supported.
 
 ### 4. Recent Files & Quick Switch
 - **Recent Files**: See the 50 most recently modified files across *all* your vaults.

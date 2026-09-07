@@ -2,6 +2,16 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.4.0] - 2026-09-07
+### Fixed
+- `[[Vault::Note]]` cross-vault links now open the target note in Reading View.
+  Obsidian core parses these into unresolved anchors before postprocessors run,
+  so the plugin now rewrites those anchors instead of scanning raw text (which
+  never matched). Supports alias (`|...`), heading (`#...`), and path forms;
+  right-click opens the source vault.
+### Known limitation
+- Click-through in Live Preview is not yet supported.
+
 ## [2.3.2] - 2026-09-07
 ### Fixed
 - Review-bot code reading warnings via minimal ambient Node.js type
