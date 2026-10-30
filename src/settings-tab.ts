@@ -9,7 +9,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
   vaultRegistry: VaultRegistry;
   indexer: Indexer;
   private newVaultPath = "";
-  private excludeTimeout: number | null = null;
+  private rebuildTimeout: number | null = null;
 
   constructor(app: App, plugin: MultiVaultNavigatorPlugin, vaultRegistry: VaultRegistry, indexer: Indexer) {
     super(app, plugin);
@@ -64,6 +64,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
               .onChange(async (value) => {
                 this.vaultRegistry.updateVault(vault.id, { enabled: value });
                 await this.plugin.saveSettings();
+                this.scheduleRebuild();
               })
             )
             .addButton(button => {
@@ -73,6 +74,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                 this.vaultRegistry.removeVault(vault.id);
                 await this.plugin.saveSettings();
                 this.update();
+                this.scheduleRebuild();
               });
             });
         }
@@ -127,6 +129,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                         this.newVaultPath = "";
                         await this.plugin.saveSettings();
                         this.update();
+                        this.scheduleRebuild();
                       }
                     }
                   })
@@ -148,7 +151,6 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                 .setDestructive()
                 .onClick(async () => {
                   await this.indexer.clearIndex();
-                  this.plugin.refreshSearchEngine();
                 })
               );
             }
@@ -161,8 +163,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                 .setButtonText("Refresh now")
                 .setCta()
                 .onClick(async () => {
-                  await this.indexer.buildFullIndex(true);
-                  this.plugin.refreshSearchEngine();
+                  await this.indexer.buildFullIndex(true, true);
                 })
               );
             }
@@ -178,6 +179,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                   if (!isNaN(parsed) && parsed > 0) {
                     this.plugin.settings.indexOptions.maxPreviewChars = parsed;
                     await this.plugin.saveSettings();
+                    this.scheduleRebuild();
                   }
                 })
               );
@@ -192,7 +194,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                 .onChange(async (value) => {
                   this.plugin.settings.indexOptions.storeSnippetsInCache = value;
                   await this.plugin.saveSettings();
-                  await this.indexer.buildFullIndex(true);
+                  await this.indexer.buildFullIndex(true, true);
                 })
               );
             }
@@ -209,13 +211,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                     const patterns = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
                     this.plugin.settings.indexOptions.globalExcludePatterns = patterns;
                     await this.plugin.saveSettings();
-
-                    if (this.excludeTimeout !== null) {
-                      window.clearTimeout(this.excludeTimeout);
-                    }
-                    this.excludeTimeout = window.setTimeout(() => {
-                      void this.refreshIndexFromSettings();
-                    }, 1500);
+                    this.scheduleRebuild();
                   })
                 )
                 .addButton(btn => btn
@@ -262,15 +258,24 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
       await this.plugin.saveSettings();
       this.update();
 
-      await this.indexer.buildFullIndex(true);
-      this.plugin.refreshSearchEngine();
+      await this.indexer.buildFullIndex(true, true);
     }
+  }
+
+  /** Debounced so typing or toggling several settings rebuilds once. */
+  private scheduleRebuild(): void {
+    if (this.rebuildTimeout !== null) {
+      window.clearTimeout(this.rebuildTimeout);
+    }
+    this.rebuildTimeout = window.setTimeout(() => {
+      this.rebuildTimeout = null;
+      void this.refreshIndexFromSettings();
+    }, 1500);
   }
 
   private async refreshIndexFromSettings(): Promise<void> {
     try {
-      await this.indexer.buildFullIndex(true);
-      this.plugin.refreshSearchEngine();
+      await this.indexer.buildFullIndex(true, true);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       new Notice(`Failed to refresh index: ${message}`);

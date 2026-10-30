@@ -3,6 +3,28 @@
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
 
+## [2.3.4] - 2026-10-30
+### Fixed
+- **Cross-vault links between vaults**: The active vault is now registered under
+  Obsidian's own vault id, and "Copy cross-vault link" also includes the vault
+  name, so `obsidian://mvn-open` links resolve when clicked from another vault.
+- **Index settings apply immediately**: Changes to exclude patterns and max
+  preview characters take effect on the next rebuild instead of after a restart.
+- **Removed vaults stay removed**: Auto-detect no longer re-adds a vault you
+  removed in settings. Adding it manually again lifts the removal.
+- **Search stays in sync with the index**: Search results and the sidebar now
+  refresh after every index change (Move/Copy, Clear index, settings). Enabling,
+  disabling, adding, or removing a vault triggers a re-index, and a rebuild
+  requested while one is running is queued instead of dropped.
+- **External file tabs survive restart**: Read-only cross-vault tabs now save
+  their file and reopen with content after Obsidian restarts.
+- **Tag matching**: `#art` no longer matches `#smart`; a tag matches itself and
+  its nested children (`#project` matches `#project/alpha`). Nested and unicode
+  inline tags are now indexed, numeric-only tags are ignored, and `#` prefixes
+  in frontmatter tags are stripped.
+- Default settings are no longer mutated at runtime, and "Recent files" no
+  longer reorders the shared index in place.
+
 ## [2.3.3] - 2026-09-07
 ### Fixed
 - `[[Vault::Note]]` cross-vault links now open the target note in Reading View.

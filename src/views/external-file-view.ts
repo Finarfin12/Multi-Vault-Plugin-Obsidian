@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, setIcon, ViewStateResult } from 'obsidian';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IndexedFile } from '../types';
@@ -6,6 +6,13 @@ import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
 
 export const VIEW_TYPE_EXTERNAL_FILE = "mvn-external-file-view";
+
+// Fields needed to re-render the view after Obsidian restores the workspace
+type PersistedFile = Pick<IndexedFile, 'id' | 'vaultId' | 'vaultName' | 'absolutePath' | 'relativePath' | 'basename' | 'extension' | 'mtime' | 'size'>;
+
+interface ExternalFileViewState {
+  file?: PersistedFile;
+}
 
 export class ExternalFileView extends ItemView {
   private file: IndexedFile | null = null;
@@ -38,6 +45,25 @@ export class ExternalFileView extends ItemView {
     // Actions are now rendered inline next to the metadata badge
   }
 
+  getState(): Record<string, unknown> {
+    const state = super.getState();
+    if (this.file) {
+      const { id, vaultId, vaultName, absolutePath, relativePath, basename, extension, mtime, size } = this.file;
+      const file: PersistedFile = { id, vaultId, vaultName, absolutePath, relativePath, basename, extension, mtime, size };
+      state.file = file;
+    }
+    return state;
+  }
+
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
+    const saved = (state as ExternalFileViewState | null)?.file;
+    if (saved?.absolutePath) {
+      // Prefer the current index entry (fresh tags/links), else the saved copy
+      await this.setFile(this.searchEngine.getFileById(saved.id) ?? saved);
+    }
+    await super.setState(state, result);
+  }
+
   public async setFile(file: IndexedFile) {
     this.file = file;
     try {
@@ -45,6 +71,8 @@ export class ExternalFileView extends ItemView {
     } catch {
       this.content = `> [!ERROR] Failed to read file from path: ${file.absolutePath}`;
     }
+    // Persist the new file so the tab survives a restart
+    this.app.workspace.requestSaveLayout();
     void this.render();
   }
 

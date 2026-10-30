@@ -31,9 +31,11 @@ export class MarkdownParser {
 
     // Extract inline tags
     const inlineTags: string[] = [];
-    const tagRegex = /(?<=^|\s)#([a-zA-Z0-9_-]+)/g;
+    // Unicode letters and nested tags (#parent/child); purely numeric tags are not tags in Obsidian
+    const tagRegex = /(?<=^|\s)#([\p{L}\p{N}_\-/]+)/gu;
     while ((match = tagRegex.exec(textContent)) !== null) {
-      inlineTags.push(match[1]);
+      const tag = match[1].replace(/\/+$/, '');
+      if (tag && !/^\d+$/.test(tag)) inlineTags.push(tag);
     }
 
     // Extract tags from frontmatter
@@ -135,14 +137,14 @@ export class MarkdownParser {
     if (Array.isArray(value)) {
       return value
         .filter((item): item is string => typeof item === 'string')
-        .map(item => item.trim())
+        .map(item => item.trim().replace(/^#+/, ''))
         .filter(Boolean);
     }
 
     if (typeof value === 'string') {
       return value
         .split(',')
-        .map(item => item.trim())
+        .map(item => item.trim().replace(/^#+/, ''))
         .filter(Boolean);
     }
 

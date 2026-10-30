@@ -39,6 +39,7 @@ export interface MultiVaultSettings {
   savedSearches: { id: string, name: string, query: string }[];
   pinnedFiles: string[];
   uiStyle?: 'classic' | 'modern';
+  ignoredVaultPaths?: string[];
 }
 
 export interface IndexCache {
@@ -57,5 +58,6 @@ export const DEFAULT_SETTINGS: MultiVaultSettings = {
   },
   savedSearches: [],
   pinnedFiles: [],
-  uiStyle: 'classic'
+  uiStyle: 'classic',
+  ignoredVaultPaths: []
 };

@@ -144,7 +144,7 @@ export class FileOperationModal extends Modal {
             }
             
             // Trigger background re-index so search is updated
-            void this.indexer.buildFullIndex(true);
+            void this.indexer.buildFullIndex(true, true);
             
             this.close();
           } catch (_e: unknown) {

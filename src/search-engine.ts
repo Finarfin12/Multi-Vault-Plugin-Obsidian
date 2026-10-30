@@ -5,6 +5,18 @@ export interface MultiVaultSearchResult extends SearchResult {
   file: IndexedFile;
 }
 
+const normalizeTag = (tag: string) => tag.toLowerCase().replace(/^#+/, '');
+
+/**
+ * True when the file has every target tag, either exactly or as a parent of
+ * a nested tag (#project matches #project/alpha, but #art never matches #smart).
+ */
+function hasAllTags(file: IndexedFile, targets: string[]): boolean {
+  if (!file.tags) return false;
+  const fileTags = file.tags.map(normalizeTag);
+  return targets.map(normalizeTag).every(tt => fileTags.some(ft => ft === tt || ft.startsWith(`${tt}/`)));
+}
+
 export class SearchEngine {
   private miniSearch: MiniSearch<IndexedFile>;
   private indexedFiles: IndexedFile[] = [];
@@ -50,18 +62,18 @@ export class SearchEngine {
     this.miniSearch.addAll(files);
   }
 
+  public getFileById(id: string): IndexedFile | undefined {
+    return this.fileMap.get(id);
+  }
+
   public search(query: string, options?: { vaultId?: string, limit?: number, tags?: string[] }): MultiVaultSearchResult[] {
     if (!query.trim()) {
       if (options?.tags && options.tags.length > 0) {
         let files = this.indexedFiles;
         if (options.vaultId) files = files.filter(f => f.vaultId === options.vaultId);
         
-        const targetTags = options.tags.map(t => t.toLowerCase().replace('#', ''));
-        files = files.filter(f => {
-           if (!f.tags) return false;
-           const fileTags = f.tags.map(t => t.toLowerCase().replace('#', ''));
-           return targetTags.every(tt => fileTags.some(ft => ft === tt || ft.includes(tt)));
-        });
+        const targetTags = options.tags;
+        files = files.filter(f => hasAllTags(f, targetTags));
         
         if (options.limit && options.limit > 0) {
           files = files.slice(0, options.limit);
@@ -88,12 +100,8 @@ export class SearchEngine {
           return false;
         }
 
-        if (options?.tags && options.tags.length > 0) {
-           if (!file.tags) return false;
-           const targetTags = options.tags.map(t => t.toLowerCase().replace('#', ''));
-           const fileTags = file.tags.map(t => t.toLowerCase().replace('#', ''));
-           const hasAllTags = targetTags.every(tt => fileTags.some(ft => ft === tt || ft.includes(tt)));
-           if (!hasAllTags) return false;
+        if (options?.tags && options.tags.length > 0 && !hasAllTags(file, options.tags)) {
+           return false;
         }
 
         return true;
@@ -120,8 +128,8 @@ export class SearchEngine {
       files = files.filter(f => f.vaultId === vaultId);
     }
     
-    // Sort by mtime descending
-    return files.sort((a, b) => b.mtime - a.mtime).slice(0, limit);
+    // Sort by mtime descending (on a copy: the array is shared with the indexer)
+    return [...files].sort((a, b) => b.mtime - a.mtime).slice(0, limit);
   }
 
   /**

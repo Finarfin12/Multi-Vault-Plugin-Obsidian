@@ -9,22 +9,21 @@ export class Indexer {
   private app: App;
   private vaultRegistry: VaultRegistry;
   private settings: MultiVaultSettings;
-  
-  private scanner: FileScanner;
-  private parser: MarkdownParser;
+  private onUpdate: () => void;
+
   private store: IndexStore;
 
   private indexedFiles: IndexedFile[] = [];
   private isIndexing: boolean = false;
+  private rerunRequested: boolean = false;
   private lastIndexTime: number = 0;
 
-  constructor(app: App, vaultRegistry: VaultRegistry, settings: MultiVaultSettings) {
+  constructor(app: App, vaultRegistry: VaultRegistry, settings: MultiVaultSettings, onUpdate: () => void) {
     this.app = app;
     this.vaultRegistry = vaultRegistry;
     this.settings = settings;
+    this.onUpdate = onUpdate;
 
-    this.scanner = new FileScanner(this.settings.indexOptions.globalExcludePatterns || []);
-    this.parser = new MarkdownParser(this.settings.indexOptions.maxPreviewChars);
     this.store = new IndexStore(this.app);
   }
 
@@ -37,15 +36,21 @@ export class Indexer {
     return this.indexedFiles;
   }
 
-  public async buildFullIndex(showNotice = false): Promise<void> {
+  /**
+   * Rebuild the index from disk. `force` skips the cooldown; use it when
+   * settings or files changed and the index must reflect that. A request
+   * that arrives mid-build is queued and run once the current build ends.
+   */
+  public async buildFullIndex(showNotice = false, force = false): Promise<void> {
     const now = Date.now();
-    if (now - this.lastIndexTime < 15000) {
+    if (!force && now - this.lastIndexTime < 15000) {
       if (showNotice) new Notice("Indexing is on cooldown. Please wait a few seconds.");
       return;
     }
 
     if (this.isIndexing) {
-      if (showNotice) new Notice("Indexing is already in progress...");
+      this.rerunRequested = true;
+      if (showNotice) new Notice("Indexing is already in progress; it will run again when done.");
       return;
     }
 
@@ -53,6 +58,10 @@ export class Indexer {
     if (showNotice) new Notice("Starting cross-vault index build...");
 
     try {
+      // Built per run so changed exclude patterns and preview length apply
+      const scanner = new FileScanner(this.settings.indexOptions.globalExcludePatterns || []);
+      const parser = new MarkdownParser(this.settings.indexOptions.maxPreviewChars);
+
       const enabledVaults = this.vaultRegistry.getEnabledVaults();
       const allFiles: IndexedFile[] = [];
 
@@ -60,13 +69,13 @@ export class Indexer {
 
       for (const vault of enabledVaults) {
         // Scan files
-        const fileEntries = await this.scanner.scanVaultAsync(vault);
-        
+        const fileEntries = await scanner.scanVaultAsync(vault);
+
         // Parse files
         for (const entry of fileEntries) {
-          const indexed = await this.parser.parseMarkdownFileAsync(entry, vault);
+          const indexed = await parser.parseMarkdownFileAsync(entry, vault);
           allFiles.push(indexed);
-          
+
           fileCount++;
           if (fileCount % 50 === 0) {
              await new Promise(resolve => window.setTimeout(resolve, 0)); // yield to UI
@@ -76,7 +85,8 @@ export class Indexer {
 
       this.indexedFiles = allFiles;
       this.lastIndexTime = Date.now();
-      
+      this.onUpdate();
+
       // Save cache
       await this.store.saveIndex(this.indexedFiles, this.settings.indexOptions.storeSnippetsInCache !== false);
 
@@ -89,10 +99,16 @@ export class Indexer {
     } finally {
       this.isIndexing = false;
     }
+
+    if (this.rerunRequested) {
+      this.rerunRequested = false;
+      await this.buildFullIndex(false, true);
+    }
   }
 
   public async clearIndex(): Promise<void> {
     this.indexedFiles = [];
+    this.onUpdate();
     await this.store.clearIndex();
     new Notice("Index cleared.");
   }

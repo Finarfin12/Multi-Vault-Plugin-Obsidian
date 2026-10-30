@@ -7,20 +7,25 @@ import { VaultConfig, MultiVaultSettings } from './types';
 export class VaultRegistry {
   private vaults: Map<string, VaultConfig> = new Map();
   private app: App;
+  private settings: MultiVaultSettings;
 
   constructor(app: App, settings: MultiVaultSettings) {
     this.app = app;
-    
+    this.settings = settings;
+
     // Load from settings
     if (settings.vaults) {
       settings.vaults.forEach(v => this.vaults.set(v.id, v));
     }
 
+    // Vaults known to Obsidian, keyed by Obsidian's own vault id
+    const globalVaults = this.readGlobalVaults();
+
     // Auto-detect current vault if not in list
-    this.detectCurrentVault();
-    
+    this.detectCurrentVault(globalVaults);
+
     // Auto-detect other vaults from Obsidian global config
-    this.autoDetectGlobalVaults();
+    this.autoDetectGlobalVaults(globalVaults);
   }
 
   public getVaults(): VaultConfig[] {
@@ -35,12 +40,32 @@ export class VaultRegistry {
     return this.vaults.get(id);
   }
 
+  /**
+   * Resolve a vault referenced by a cross-vault link. Ids of manually added
+   * vaults differ between each vault's copy of this plugin, so fall back to
+   * the vault name.
+   */
+  public findVault(id?: string, name?: string): VaultConfig | undefined {
+    if (id) {
+      const byId = this.vaults.get(id);
+      if (byId) return byId;
+    }
+    if (name) {
+      const lower = name.toLowerCase();
+      return this.getVaults().find(v => v.name.toLowerCase() === lower);
+    }
+    return undefined;
+  }
+
   public addVault(config: VaultConfig): boolean {
     if (!this.validateVaultPath(config.path)) {
       new Notice(`Invalid vault path: ${config.path}`);
       return false;
     }
     this.vaults.set(config.id, config);
+    // Manually re-adding a vault lifts any earlier removal
+    const resolved = path.resolve(config.path);
+    this.settings.ignoredVaultPaths = (this.settings.ignoredVaultPaths || []).filter(p => p !== resolved);
     return true;
   }
 
@@ -52,6 +77,14 @@ export class VaultRegistry {
   }
 
   public removeVault(id: string) {
+    const vault = this.vaults.get(id);
+    if (vault) {
+      // Remember the removal so auto-detect does not re-add it on next start
+      const resolved = path.resolve(vault.path);
+      const ignored = this.settings.ignoredVaultPaths || [];
+      if (!ignored.includes(resolved)) ignored.push(resolved);
+      this.settings.ignoredVaultPaths = ignored;
+    }
     this.vaults.delete(id);
   }
 
@@ -79,15 +112,24 @@ export class VaultRegistry {
     return null;
   }
 
-  private detectCurrentVault() {
+  private detectCurrentVault(globalVaults: Map<string, string>) {
     if (this.app.vault.adapter instanceof FileSystemAdapter) {
       const basePath = this.app.vault.adapter.getBasePath();
       const existing = Array.from(this.vaults.values()).find(v => path.resolve(v.path) === path.resolve(basePath));
-      
+
       if (!existing) {
         const name = path.basename(basePath);
+        // Prefer Obsidian's own vault id so this vault has the same id
+        // here as in every other vault's copy of this plugin
+        let globalId: string | undefined;
+        for (const [key, vaultPath] of globalVaults) {
+          if (path.resolve(vaultPath) === path.resolve(basePath)) {
+            globalId = key;
+            break;
+          }
+        }
         this.addVault({
-          id: `vault-${Date.now()}`,
+          id: globalId ?? `vault-${Date.now()}`,
           name: name,
           path: basePath,
           enabled: true
@@ -96,10 +138,32 @@ export class VaultRegistry {
     }
   }
 
-  private autoDetectGlobalVaults() {
+  private autoDetectGlobalVaults(globalVaults: Map<string, string>) {
+    const ignored = this.settings.ignoredVaultPaths || [];
+    for (const [key, vaultPath] of globalVaults) {
+      const resolved = path.resolve(vaultPath);
+      if (ignored.includes(resolved)) continue;
+
+      // Check if already in our registry
+      const existing = Array.from(this.vaults.values()).find(v => path.resolve(v.path) === resolved);
+
+      if (!existing && this.validateVaultPath(vaultPath)) {
+        const name = path.basename(vaultPath);
+        this.vaults.set(key, {
+          id: key,
+          name: name,
+          path: vaultPath,
+          enabled: true
+        });
+      }
+    }
+  }
+
+  private readGlobalVaults(): Map<string, string> {
+    const result = new Map<string, string>();
     const obsidianJsonPath = this.getGlobalObsidianConfigPath();
     if (!obsidianJsonPath || !fs.existsSync(obsidianJsonPath)) {
-      return;
+      return result;
     }
 
     try {
@@ -110,28 +174,14 @@ export class VaultRegistry {
       const json = JSON.parse(data) as ObsidianJson;
       if (json && json.vaults) {
         for (const key in json.vaults) {
-          const vaultInfo = json.vaults[key];
-          if (vaultInfo.path) {
-            const vaultPath = vaultInfo.path;
-            
-            // Check if already in our registry
-            const existing = Array.from(this.vaults.values()).find(v => path.resolve(v.path) === path.resolve(vaultPath));
-            
-            if (!existing && this.validateVaultPath(vaultPath)) {
-              const name = path.basename(vaultPath);
-              this.vaults.set(key, {
-                id: key,
-                name: name,
-                path: vaultPath,
-                enabled: true
-              });
-            }
-          }
+          const vaultPath = json.vaults[key].path;
+          if (vaultPath) result.set(key, vaultPath);
         }
       }
     } catch {
-      return;
+      // Unreadable or malformed config: nothing to auto-detect
     }
+    return result;
   }
 
   private getGlobalObsidianConfigPath(): string | null {

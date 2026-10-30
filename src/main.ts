@@ -35,7 +35,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.settings.vaults = this.vaultRegistry.getVaults();
     await this.saveSettings();
 
-    this.indexer = new Indexer(this.app, this.vaultRegistry, this.settings);
+    this.indexer = new Indexer(this.app, this.vaultRegistry, this.settings, () => this.onIndexUpdated());
     this.searchEngine = new SearchEngine();
     this.fileOpener = new FileOpener(this.app, this.vaultRegistry);
 
@@ -129,7 +129,6 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       name: 'Refresh index',
       callback: async () => {
         await this.indexer.buildFullIndex(true);
-        this.refreshSearchEngine();
       }
     });
 
@@ -159,7 +158,13 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
             return;
          }
          const vaultId = this.vaultRegistry.getCurrentVaultId();
-         const link = `[${activeFile.basename}](obsidian://mvn-open?vaultId=${vaultId}&file=${encodeURIComponent(activeFile.path)})`;
+         const vault = vaultId ? this.vaultRegistry.getVaultById(vaultId) : undefined;
+         if (!vaultId || !vault) {
+            new Notice("Current vault is not registered with the plugin.");
+            return;
+         }
+         // Include the name too: other vaults may know this vault under a different id
+         const link = `[${activeFile.basename}](obsidian://mvn-open?vaultId=${encodeURIComponent(vaultId)}&vault=${encodeURIComponent(vault.name)}&file=${encodeURIComponent(activeFile.path)})`;
          await navigator.clipboard.writeText(link);
          new Notice("Cross-vault link copied to clipboard!");
       }
@@ -175,12 +180,15 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
 
     // Register protocol handler
     this.registerObsidianProtocolHandler("mvn-open", async (params) => {
-       const vaultId = params.vaultId;
        const filePath = params.file;
-       if (!vaultId || !filePath) return;
+       const vault = this.vaultRegistry.findVault(params.vaultId, params.vault);
+       if (!vault || !filePath) {
+          new Notice("Cross-vault link points to an unknown vault.");
+          return;
+       }
        
        const files = this.indexer.getIndexedFiles();
-       const target = files.find(f => f.vaultId === vaultId && f.relativePath === filePath);
+       const target = files.find(f => f.vaultId === vault.id && f.relativePath === filePath);
        
        if (target) {
           await this.fileOpener.openFile(target);
@@ -219,7 +227,13 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData()) as Partial<MultiVaultSettings>);
+    const loaded = ((await this.loadData()) ?? {}) as Partial<MultiVaultSettings>;
+    // Clone defaults so pushing to arrays never mutates DEFAULT_SETTINGS,
+    // and merge indexOptions so keys added in later versions get defaults
+    const defaults = structuredClone(DEFAULT_SETTINGS);
+    this.settings = Object.assign(defaults, loaded, {
+      indexOptions: Object.assign(defaults.indexOptions, loaded.indexOptions)
+    });
   }
 
   async saveSettings() {
@@ -255,10 +269,17 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     this.searchEngine.indexFiles(this.indexer.getIndexedFiles());
   }
 
+  /** Called by the indexer whenever its file list changes. */
+  private onIndexUpdated() {
+    // The search engine is created after the indexer
+    if (!this.searchEngine) return;
+    this.refreshSearchEngine();
+    this.refreshSidebar();
+  }
+
   private async refreshIndexInBackground(): Promise<void> {
     try {
       await this.indexer.buildFullIndex(false);
-      this.refreshSearchEngine();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       new Notice(`Failed to refresh cross-vault index: ${message}`);
