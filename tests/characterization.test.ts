@@ -93,15 +93,8 @@ test('scanner: skips .obsidian/.trash/node_modules/.git, only .md files, forward
   }
 });
 
-test('scanner (2.3.4 behaviour): exclude is a case-insensitive SUBSTRING match, so "art" also drops smart/ and Article/', async () => {
-  const vault = makeVault('s2', { 'smart/x.md': '1', 'Article/y.md': '2', 'art/z.md': '3', 'keep/k.md': '4' });
-  try {
-    const entries = await new FileScanner(['art']).scanVaultAsync(vault);
-    assert.deepEqual(entries.map(e => e.relativePath), ['keep/k.md']);
-  } finally {
-    cleanup(vault);
-  }
-});
+// NOTE: the 2.3.4 test here pinned the substring-exclude bug ("art" dropped smart/ and Article/).
+// 2.4.0 intentionally changes that (F5); the new behaviour is covered in path-matcher.test.ts.
 
 test('scanner: per-vault excludePatterns are applied together with the global ones', async () => {
   const vault = makeVault('s3', { 'Private/a.md': '1', 'Drafts/b.md': '2', 'ok/c.md': '3' }, { excludePatterns: ['drafts'] });
