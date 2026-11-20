@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { IndexedFile, VaultConfig } from '../types';
 import { FileEntry } from './file-scanner';
+import { findCrossVaultLinks } from '../links/link-parser';
 
 export interface ParserOptions {
   /** Return the note body so it can be full-text indexed. */
@@ -87,6 +88,7 @@ export class MarkdownParser {
     // Extract outgoing wikilinks (for cross-vault backlinks).
     // Supports [[Note]], [[Note|alias]], [[Note#heading]], [[Vault::Note]].
     const outgoingLinks = this.extractOutgoingLinks(textContent);
+    const crossVaultLinks = this.extractCrossVaultLinks(textContent);
 
     // Generate preview
     const preview = textContent
@@ -107,6 +109,7 @@ export class MarkdownParser {
       headings,
       tags,
       outgoingLinks,
+      crossVaultLinks,
       mtime: file.mtime,
       size: file.size,
       contentPreview: preview
@@ -187,6 +190,15 @@ export class MarkdownParser {
     }
 
     return [];
+  }
+
+  /** `vaultname::Note` for every [[Vault::Note]] / ![[Vault::Note]] link outside code, without duplicates. */
+  private extractCrossVaultLinks(text: string): string[] {
+    const targets = new Set<string>();
+    for (const link of findCrossVaultLinks(text)) {
+      targets.add(`${link.vaultName.toLowerCase()}::${link.notePath ?? link.noteName}`);
+    }
+    return Array.from(targets);
   }
 
   private extractOutgoingLinks(text: string): string[] {

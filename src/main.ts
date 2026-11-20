@@ -17,6 +17,7 @@ import { VIEW_TYPE_SEARCH_PAGE, SearchPageView } from './views/search-page-view'
 import { VIEW_TYPE_TAG_EXPLORER, TagExplorerView } from './views/tag-explorer-view';
 import { VIEW_TYPE_DAILY_DASHBOARD, DailyDashboardView } from './views/daily-dashboard-view';
 import { VIEW_TYPE_SIDEBAR, SidebarView } from './views/sidebar-view';
+import { VIEW_TYPE_VAULT_MAP, VaultMapView } from './views/vault-map-view';
 import { Notice, WorkspaceLeaf } from 'obsidian';
 
 export default class MultiVaultNavigatorPlugin extends Plugin {
@@ -75,6 +76,11 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       (leaf) => new SidebarView(leaf, this, this.fileOpener)
     );
 
+    this.registerView(
+      VIEW_TYPE_VAULT_MAP,
+      (leaf) => new VaultMapView(leaf, this)
+    );
+
     this.addRibbonIcon('library', 'Multi-vault sidebar', async () => {
        await this.activateSidebar();
     });
@@ -96,6 +102,16 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_TAG_EXPLORER, active: true });
+        await this.app.workspace.revealLeaf(leaf);
+      }
+    });
+
+    this.addCommand({
+      id: 'multi-vault-map',
+      name: 'Open cross-vault map',
+      callback: async () => {
+        const leaf = this.app.workspace.getLeaf(true);
+        await leaf.setViewState({ type: VIEW_TYPE_VAULT_MAP, active: true });
         await this.app.workspace.revealLeaf(leaf);
       }
     });
@@ -296,6 +312,9 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
   /** Called by the indexer whenever its file list changes (search is updated by the indexer itself). */
   private onIndexUpdated() {
     this.refreshSidebar();
+    this.app.workspace.getLeavesOfType(VIEW_TYPE_VAULT_MAP).forEach(leaf => {
+      if (leaf.view instanceof VaultMapView) leaf.view.render();
+    });
   }
 
   private async refreshIndexInBackground(): Promise<void> {

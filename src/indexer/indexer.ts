@@ -199,7 +199,8 @@ export class Indexer {
   /** Settings that decide what is read from a note; a change forces every note to be re-read. */
   private parseSignature(): string {
     const o = this.settings.indexOptions;
-    return `${o.maxPreviewChars}|${o.fullText !== false ? o.maxIndexedBytes : 'preview'}`;
+    // The trailing tag changes whenever the parser starts extracting something new, so old caches are re-read once
+    return `${o.maxPreviewChars}|${o.fullText !== false ? o.maxIndexedBytes : 'preview'}|xv1`;
   }
 
   private newScanner(): FileScanner {

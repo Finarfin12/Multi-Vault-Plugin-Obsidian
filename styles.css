@@ -869,3 +869,76 @@ button.mvn-btn-small:hover {
   margin-bottom: var(--size-4-2);
   font-size: var(--font-ui-smaller);
 }
+
+/* Cross-vault map (F12) */
+.mvn-vault-map {
+  padding: var(--size-4-4);
+}
+
+.mvn-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mvn-map-svg {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+}
+
+.mvn-map-node circle {
+  fill: var(--background-secondary);
+  stroke: var(--interactive-accent);
+  stroke-width: 2px;
+}
+
+.mvn-map-node-name {
+  fill: var(--text-normal);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.mvn-map-node-count {
+  fill: var(--text-muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.mvn-map-edge-hit {
+  stroke: transparent;
+  stroke-width: 14px;
+  cursor: pointer;
+}
+
+.mvn-map-edge-line {
+  stroke: var(--text-muted);
+  stroke-width: 2px;
+  fill: none;
+  pointer-events: none;
+}
+
+.mvn-map-arrowhead {
+  fill: var(--text-muted);
+}
+
+.mvn-map-edge-label {
+  fill: var(--text-normal);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.mvn-map-edge:hover .mvn-map-edge-line,
+.mvn-map-edge:focus .mvn-map-edge-line,
+.mvn-map-edge.is-selected .mvn-map-edge-line {
+  stroke: var(--interactive-accent);
+  stroke-width: 3px;
+}
+
+.mvn-map-details {
+  margin-top: var(--size-4-3);
+}
+
+.mvn-map-link {
+  cursor: pointer;
+}

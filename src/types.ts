@@ -21,6 +21,8 @@ export interface IndexedFile {
   headings?: string[];
   tags?: string[];
   outgoingLinks?: string[];
+  /** `vaultname::Note` targets of [[Vault::Note]] links (vault name lower-cased); feeds the cross-vault map. */
+  crossVaultLinks?: string[];
   mtime: number;
   size: number;
   contentPreview?: string;
