@@ -154,7 +154,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       id: 'multi-vault-duplicates',
       name: 'Find duplicate notes across vaults',
       callback: () => {
-         new DuplicateDetectorModal(this.app, this.indexer, this.fileOpener).open();
+         new DuplicateDetectorModal(this.app, this.indexer, this.fileOpener, this.settings.indexOptions).open();
       }
     });
 
