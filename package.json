@@ -1,11 +1,11 @@
 {
   "name": "multi-vault-navigator",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Cross-vault search and navigation.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build": "tsc -noEmit -skipLibCheck && tsc -p tsconfig.tests.json -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "lint": "eslint src",
     "test": "node scripts/run-tests.mjs"
   },

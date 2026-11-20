@@ -39,10 +39,10 @@ export function extractSection(markdown: string, heading: string): string | null
         level = m[1].length;
       }
     } else if (m[1].length <= level) {
-      return lines.slice(start, i).join('\n').trimEnd();
+      return lines.slice(start, i).join('\n').replace(/\s+$/, '');
     }
   }
-  return start === -1 ? null : lines.slice(start).join('\n').trimEnd();
+  return start === -1 ? null : lines.slice(start).join('\n').replace(/\s+$/, '');
 }
 
 /** Nesting depth of an embed element: 1 for an embed in a normal note, 2 inside another embed, ... */

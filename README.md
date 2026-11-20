@@ -129,6 +129,8 @@ Go to **Settings > Multi-Vault Navigator** to configure:
 ## Development
 
 - `npm test` runs the automated tests (Node's built-in test runner, no extra dependencies).
+- `tsconfig.json` type-checks `src/` the way the Obsidian review bot does (no `@types/node`, ES2016 library set), so `npm run lint` shows the same warnings the bot would. Tests and scripts are checked by `tsconfig.tests.json` as part of `npm run build`.
+- Releases are built by GitHub Actions when a version tag is pushed (`.github/workflows/release.yml`): tests, lint and build run on the tagged commit, the release files get GitHub artifact attestations, and the release is published with `main.js`, `manifest.json` and `styles.css`.
 - `npm run lint` and `npm run build` must finish without errors. Set `MVN_SKIP_COPY=1` to build without copying the files into the author's local test vault.
 - `node scripts/gen-fixture-vault.mjs <dir> 5000` creates a synthetic 3-vault fixture and `node scripts/bench.mjs <dir>` prints performance numbers (not part of the release).
 

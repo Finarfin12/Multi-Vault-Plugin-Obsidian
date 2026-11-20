@@ -2,6 +2,19 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.5.1] - 2026-11-20
+Fixes for the Obsidian review-bot warnings reported for 2.5.0. No behaviour change.
+
+### Fixed
+- **`no-unsafe-return` / `no-unsafe-call` / `no-unsafe-assignment` / `no-unsafe-member-access`** in `analysis/digest.ts`, `links/embed-renderer.ts` and `search/query-parser.ts`. Cause: `String.prototype.padStart`, `trimEnd` and `Array.prototype.flatMap` are newer than the `ES7` library set in `tsconfig.json`; on a machine with `@types/node` they type-check, but the review bot has no `@types/node`, so they became "error" types. They are replaced with plain ES2015 code.
+- **The check can no longer pass locally and fail on the bot**: `tsconfig.json` now describes `src/` exactly as the bot sees it (no `@types/node`), so `npm run lint` and `tsc` report the same problems. Tests and scripts are type-checked separately with `tsconfig.tests.json` (part of `npm run build`).
+
+### Added
+- **Release provenance**: a GitHub Actions workflow (`.github/workflows/release.yml`) builds the release files from the tagged commit, runs tests and lint, creates GitHub artifact attestations for `main.js`, `manifest.json` and `styles.css`, and publishes the release. This addresses the review bot's "Missing GitHub artifact attestations" recommendation.
+
+### Not changed
+- The "direct file system access" warning and the "clipboard access" recommendation are inherent to the plugin's purpose (reading other vaults; copying cross-vault links) and are disclosed in the README.
+
 ## [2.5.0] - 2026-11-20 — "Link, search and summaries"
 Phases 2.5 (links), 2.6 (search and analysis) and 2.7 (summaries) of the roadmap, shipped together, plus fixes for the review-bot warnings of 2.4.0.
 

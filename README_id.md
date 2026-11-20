@@ -119,6 +119,8 @@ Plugin ini 100% **Local-First**:
 ## Pengembangan
 
 - `npm test` menjalankan tes otomatis (test runner bawaan Node, tanpa dependensi tambahan).
+- `tsconfig.json` memeriksa tipe `src/` seperti review bot Obsidian (tanpa `@types/node`, set library ES2016), sehingga `npm run lint` menampilkan peringatan yang sama dengan bot. Tes dan skrip diperiksa oleh `tsconfig.tests.json` sebagai bagian dari `npm run build`.
+- Rilis dibangun oleh GitHub Actions saat tag versi di-push (`.github/workflows/release.yml`): tes, lint, dan build dijalankan pada commit bertag, file rilis mendapat *artifact attestation* GitHub, lalu rilis dipublikasikan dengan `main.js`, `manifest.json`, dan `styles.css`.
 - `npm run lint` dan `npm run build` harus selesai tanpa error. Setel `MVN_SKIP_COPY=1` untuk *build* tanpa menyalin file ke vault uji lokal milik pembuat.
 - `node scripts/gen-fixture-vault.mjs <dir> 5000` membuat fixture sintetis 3 vault dan `node scripts/bench.mjs <dir>` mencetak angka kinerja (bukan bagian dari rilis).
 
