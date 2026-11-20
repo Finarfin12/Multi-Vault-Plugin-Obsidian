@@ -1,51 +1,32 @@
-import { Notice } from 'obsidian';
+import { MarkdownRenderChild, Notice } from 'obsidian';
 import type MultiVaultNavigatorPlugin from './main';
 import type { IndexedFile } from './types';
+import { readTextOrNull } from './fs-async';
+import {
+  CrossVaultRef,
+  findCrossVaultTarget as findTargetInFiles,
+  parseCrossVaultRef
+} from './links/link-parser';
+import { sourceVaultUri } from './links/link-actions';
+import { createLivePreviewExtension, LinkHost } from './links/live-preview-extension';
+import { createLiveEmbedExtension } from './links/live-embed-extension';
+import { embedDepth, EmbedHost, renderEmbed } from './links/embed-renderer';
+import { VaultLinkSuggest } from './links/vault-link-suggest';
 
-export interface CrossVaultRef {
-  vaultName: string;
-  noteName: string;
-}
-
-/**
- * Parse a "Vault::Note" link target. Returns null for normal wikilinks so
- * they are never touched. Alias ("|..."), heading ("#..."), ".md" suffix,
- * and folder prefixes are stripped before matching.
- */
-export function parseCrossVaultRef(href: string): CrossVaultRef | null {
-  if (!href) return null;
-  const idx = href.indexOf('::');
-  if (idx <= 0) return null;
-  const vaultName = href.slice(0, idx).trim();
-  let noteName = href.slice(idx + 2).split('|')[0].split('#')[0].trim();
-  noteName = noteName.replace(/\.md$/i, '').split('/').pop()?.trim() ?? '';
-  if (!vaultName || !noteName) return null;
-  return { vaultName, noteName };
-}
+export { parseCrossVaultRef };
+export type { CrossVaultRef };
 
 function findCrossVaultTarget(
   plugin: MultiVaultNavigatorPlugin,
   ref: CrossVaultRef
 ): IndexedFile | undefined {
-  const vault = ref.vaultName.toLowerCase();
-  const note = ref.noteName.toLowerCase();
-  return plugin.indexer.getIndexedFiles().find((f) => {
-    if (f.vaultName.toLowerCase() !== vault) return false;
-    if (f.basename.toLowerCase() === note) return true;
-    const rel = f.relativePath.toLowerCase();
-    return (
-      rel === note ||
-      rel === `${note}.md` ||
-      rel.endsWith(`/${note}`) ||
-      rel.endsWith(`/${note}.md`)
-    );
-  });
+  return findTargetInFiles(plugin.indexer.getIndexedFiles(), ref);
 }
 
-function openCrossVaultRef(plugin: MultiVaultNavigatorPlugin, ref: CrossVaultRef): void {
+function openCrossVaultRef(plugin: MultiVaultNavigatorPlugin, ref: CrossVaultRef, newTab = true): void {
   const target = findCrossVaultTarget(plugin, ref);
   if (target) {
-    void plugin.fileOpener.openFile(target);
+    void plugin.fileOpener.openFile(target, { newTab });
   } else {
     new Notice(`File "${ref.noteName}" not found in vault "${ref.vaultName}".`);
   }
@@ -79,28 +60,46 @@ function rewriteReadingViewAnchor(
     e.preventDefault();
     e.stopPropagation();
     const target = findCrossVaultTarget(plugin, ref);
-    if (target) {
-      window.open(
-        `obsidian://open?vault=${encodeURIComponent(target.vaultName)}&file=${encodeURIComponent(target.relativePath)}`
-      );
-    }
+    if (target) window.open(sourceVaultUri(target));
   });
 }
 
+/** Cross-vault link behaviour for the Live Preview / Source mode editor (F7). */
+function editorLinkHost(plugin: MultiVaultNavigatorPlugin): LinkHost {
+  return {
+    isResolved: (link) => findCrossVaultTarget(plugin, link) !== undefined,
+    // Plain click behaves like core: stay in the current tab; Ctrl/Cmd+click opens a new tab
+    open: (link, newTab) => openCrossVaultRef(plugin, link, newTab),
+    openInSourceVault: (link) => {
+      const target = findCrossVaultTarget(plugin, link);
+      if (target) window.open(sourceVaultUri(target));
+      else new Notice(`File "${link.noteName}" not found in vault "${link.vaultName}".`);
+    }
+  };
+}
+
+/** Shared by Reading View and Live Preview embeds (F9). */
+function embedHost(plugin: MultiVaultNavigatorPlugin): EmbedHost {
+  return {
+    app: plugin.app,
+    findTarget: (ref) => findCrossVaultTarget(plugin, ref),
+    read: (file) => readTextOrNull(file.absolutePath),
+    open: (file) => { void plugin.fileOpener.openFile(file, { newTab: false }); }
+  };
+}
+
 /**
- * Make [[Vault::Note]] links work in Reading View.
+ * Make [[Vault::Note]] links and ![[Vault::Note]] embeds work everywhere.
  *
- * Obsidian core parses cross-vault wikilinks into unresolved internal-link
- * anchors *before* markdown postprocessors run, so the previous approach of
- * scanning raw text nodes for "[[" never matched. Instead, rewrite the
- * anchors core already produced.
+ * Reading View: Obsidian core parses these into unresolved internal-link
+ * anchors / embed placeholders *before* markdown postprocessors run, so the
+ * postprocessor rewrites those elements instead of scanning raw text.
  *
- * Note: Live Preview is intentionally out of scope — intercepting editor
- * clicks there needs token/position APIs absent from the typed Obsidian
- * API surface, and an untyped workaround would risk breaking normal links.
+ * Live Preview / Source mode: CodeMirror 6 extensions decorate the links and
+ * show embeds as read-only blocks.
  */
 export function registerCrossVaultLinks(plugin: MultiVaultNavigatorPlugin): void {
-  plugin.registerMarkdownPostProcessor((element) => {
+  plugin.registerMarkdownPostProcessor((element, context) => {
     const anchors = element.querySelectorAll<HTMLAnchorElement>('a.internal-link');
     anchors.forEach((anchor) => {
       const href =
@@ -109,5 +108,25 @@ export function registerCrossVaultLinks(plugin: MultiVaultNavigatorPlugin): void
       if (!ref) return;
       rewriteReadingViewAnchor(plugin, anchor, ref, href);
     });
+
+    // Embeds: ![[Vault::Note]] and ![[Vault::Note#Heading]]
+    const host = embedHost(plugin);
+    element.querySelectorAll<HTMLElement>('.internal-embed').forEach((embed) => {
+      if (embed.classList.contains('mvn-embed')) return;
+      const ref = parseCrossVaultRef(embed.getAttribute('src') ?? '');
+      if (!ref) return;
+      embed.removeClass('internal-embed', 'is-unresolved');
+      const owner = new MarkdownRenderChild(embed);
+      context.addChild(owner);
+      void renderEmbed(host, embed, ref, embedDepth(embed), owner);
+    });
   });
+
+  plugin.registerEditorExtension([
+    createLivePreviewExtension(editorLinkHost(plugin)),
+    createLiveEmbedExtension(embedHost(plugin))
+  ]);
+
+  // Autocomplete for [[Vault::  (F8)
+  plugin.registerEditorSuggest(new VaultLinkSuggest(plugin.app, plugin));
 }

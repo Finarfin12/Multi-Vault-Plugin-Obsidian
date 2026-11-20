@@ -794,3 +794,62 @@ button.mvn-btn-small:hover {
 .mvn-diff-add {
   background-color: rgba(0, 128, 0, 0.12);
 }
+
+/* Live Preview: cross-vault links (F7) */
+.cm-line .mvn-cross-vault-link {
+  color: var(--link-color);
+  cursor: var(--cursor-link);
+}
+
+.cm-line .mvn-cross-vault-link.mvn-cross-vault-link-unresolved {
+  color: var(--link-unresolved-color);
+  opacity: var(--link-unresolved-opacity);
+}
+
+/* Autocomplete rows for [[Vault:: (F8) */
+.mvn-suggest-title {
+  color: var(--text-normal);
+}
+
+.mvn-suggest-path {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+/* Cross-vault embeds (F9) */
+.mvn-embed,
+.mvn-embed-widget {
+  display: block;
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--radius-s);
+  margin: var(--size-4-2) 0;
+  padding: var(--size-4-2) var(--size-4-3);
+  background-color: var(--background-secondary);
+}
+
+.mvn-embed-widget > .mvn-embed {
+  border: none;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.mvn-embed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.mvn-embed-open {
+  flex: none;
+}
+
+.mvn-embed-notice {
+  color: var(--text-muted);
+  font-style: italic;
+}
