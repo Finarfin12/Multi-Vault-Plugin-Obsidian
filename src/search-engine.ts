@@ -1,5 +1,7 @@
 import MiniSearch from 'minisearch';
 import { IndexDelta, IndexedFile } from './types';
+import { hasAllTags } from './search/tags';
+import { matchesFilters, ParsedQuery } from './search/query-parser';
 
 /**
  * Type boundary for the search library.
@@ -22,7 +24,10 @@ type SearchDoc = IndexedFile & { body?: string };
 
 /** The few MiniSearch members this plugin uses, typed locally. */
 interface SearchIndex {
-  search(query: string, options?: { filter?: (hit: RawSearchHit) => boolean }): RawSearchHit[];
+  search(
+    query: string,
+    options?: { filter?: (hit: RawSearchHit) => boolean; combineWith?: 'AND' | 'OR'; prefix?: boolean; fuzzy?: boolean | number }
+  ): RawSearchHit[];
   has(id: string): boolean;
   add(doc: SearchDoc): void;
   addAll(docs: SearchDoc[]): void;
@@ -44,17 +49,6 @@ export interface MultiVaultSearchResult {
   file: IndexedFile;
 }
 
-const normalizeTag = (tag: string) => tag.toLowerCase().replace(/^#+/, '');
-
-/**
- * True when the file has every target tag, either exactly or as a parent of
- * a nested tag (#project matches #project/alpha, but #art never matches #smart).
- */
-function hasAllTags(file: IndexedFile, targets: string[]): boolean {
-  if (!file.tags) return false;
-  const fileTags = file.tags.map(normalizeTag);
-  return targets.map(normalizeTag).every(tt => fileTags.some(ft => ft === tt || ft.startsWith(`${tt}/`)));
-}
 
 function extractField(document: SearchDoc, fieldName: string): string {
   if (fieldName === 'headingsStr') {
@@ -240,6 +234,62 @@ export class SearchEngine {
 
     const results: MultiVaultSearchResult[] = [];
     for (const hit of limited) {
+      if (typeof hit.id !== 'string') continue;
+      const file = this.fileMap.get(hit.id);
+      if (!file) continue;
+      results.push({ id: hit.id, terms: hit.terms, queryTerms: hit.queryTerms, score: hit.score, match: hit.match, file });
+    }
+    return results;
+  }
+
+  /** Ids of documents that contain any of the given words exactly (no prefix, no fuzzy). */
+  private idsContaining(terms: string[]): Set<string> {
+    const ids = new Set<string>();
+    for (const term of terms) {
+      for (const hit of this.index.search(term, { prefix: false, fuzzy: false })) {
+        if (typeof hit.id === 'string') ids.add(hit.id);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Search with operators (F10). Handles vault/path/tag/modified filters,
+   * excluded words and the words of phrases. The exact order of phrase words is
+   * verified separately (see search/run-search.ts) because it needs the note text.
+   * With only filters and no words, every matching note is listed, newest first.
+   */
+  public searchParsed(parsed: ParsedQuery, options: { vaultId?: string; limit?: number } = {}): MultiVaultSearchResult[] {
+    const excluded = parsed.notTerms.length > 0 ? this.idsContaining(parsed.notTerms) : new Set<string>();
+    const accept = (file: IndexedFile): boolean =>
+      !excluded.has(file.id)
+      && (!options.vaultId || file.vaultId === options.vaultId)
+      && matchesFilters(file, parsed);
+
+    const wordQuery = [parsed.text, ...parsed.phrases].join(' ').trim();
+    const limit = options.limit && options.limit > 0 ? options.limit : Infinity;
+
+    if (!wordQuery) {
+      return this.allFiles()
+        .filter(accept)
+        .sort((a, b) => b.mtime - a.mtime)
+        .slice(0, limit)
+        .map(f => ({ id: f.id, file: f, score: 1, terms: [], match: {}, queryTerms: [] }));
+    }
+
+    const hits = this.index.search(wordQuery, {
+      // A phrase needs all of its words in the same note
+      combineWith: parsed.phrases.length > 0 ? 'AND' : 'OR',
+      filter: (hit: RawSearchHit) => {
+        if (typeof hit.id !== 'string') return false;
+        const file = this.fileMap.get(hit.id);
+        return file !== undefined && accept(file);
+      }
+    });
+
+    const results: MultiVaultSearchResult[] = [];
+    for (const hit of hits) {
+      if (results.length >= limit) break;
       if (typeof hit.id !== 'string') continue;
       const file = this.fileMap.get(hit.id);
       if (!file) continue;

@@ -3,6 +3,8 @@ import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
 import { IndexedFile } from '../types';
 import { buildSnippet, loadSnippet } from '../search/snippet';
+import { runSearch } from '../search/run-search';
+import { isEmptyQuery, OPERATOR_HELP } from '../search/query-parser';
 
 import MultiVaultNavigatorPlugin from '../main';
 import { PromptModal } from '../modals/prompt-modal';
@@ -23,6 +25,7 @@ export class SearchPageView extends ItemView {
   private vaultFilterEl!: HTMLSelectElement;
   private sortFilterEl!: HTMLSelectElement;
   private resultsContainerEl!: HTMLElement;
+  private searchSeq = 0;
 
   constructor(leaf: WorkspaceLeaf, plugin: MultiVaultNavigatorPlugin, searchEngine: SearchEngine, fileOpener: FileOpener) {
     super(leaf);
@@ -62,7 +65,7 @@ export class SearchPageView extends ItemView {
     const searchBox = searchHeader.createDiv({ cls: 'mvn-sp-search-box' });
     this.searchInputEl = searchBox.createEl('input', {
       type: 'text',
-      placeholder: 'Search notes, #tags, or paths...',
+      placeholder: 'Search notes, #tags, vault:name, path:... (see operators below)',
       cls: 'mvn-sp-input'
     });
 
@@ -130,6 +133,18 @@ export class SearchPageView extends ItemView {
 
 
 
+  /** Operator cheat sheet (F10), shown while the search box is empty. */
+  private renderOperatorHelp(parent: HTMLElement): void {
+    const details = parent.createEl('details', { cls: 'mvn-sp-help' });
+    details.createEl('summary', { text: 'Search operators' });
+    const list = details.createEl('ul');
+    OPERATOR_HELP.forEach(row => {
+      const li = list.createEl('li');
+      li.createEl('code', { text: row.syntax });
+      li.appendText(` — ${row.meaning}`);
+    });
+  }
+
   public setSearchQuery(query: string) {
     if (this.searchInputEl) {
        this.searchInputEl.value = query;
@@ -138,29 +153,35 @@ export class SearchPageView extends ItemView {
   }
 
   private performSearch(rawQuery: string) {
-    this.resultsContainerEl.empty();
+    void this.runAndRender(rawQuery);
+  }
 
-    const tags: string[] = [];
-    const queryParts: string[] = [];
-
-    rawQuery.split(/\s+/).forEach(part => {
-      if (part.startsWith('#')) {
-        tags.push(part);
-      } else if (part.length > 0) {
-        queryParts.push(part);
-      }
+  private async runAndRender(rawQuery: string): Promise<void> {
+    const seq = ++this.searchSeq;
+    const selectedVaultId = this.vaultFilterEl?.value === 'all' ? undefined : this.vaultFilterEl?.value;
+    const options = this.plugin.settings.indexOptions;
+    const run = await runSearch(this.searchEngine, rawQuery, {
+      vaultId: selectedVaultId,
+      limit: selectedVaultId ? 100 : 20,
+      maxIndexedBytes: options.maxIndexedBytes
     });
+    if (seq !== this.searchSeq) return; // a newer search replaced this one while phrases were checked
 
-    const query = queryParts.join(' ');
+    this.resultsContainerEl.empty();
+    const results = run.results;
+    const queryParts = run.highlightTerms;
+    // Saved searches keep the whole query, operators included
+    const query = rawQuery.trim();
 
-    if (!query.trim() && tags.length === 0) {
+    if (isEmptyQuery(run.parsed)) {
       const emptyState = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-empty' });
       emptyState.createDiv({ text: 'Start typing to search for files or filter by #tag...', cls: 'mvn-text-muted' });
+      this.renderOperatorHelp(emptyState);
       return;
     }
-
-    const selectedVaultId = this.vaultFilterEl?.value === 'all' ? undefined : this.vaultFilterEl?.value;
-    const results = this.searchEngine.search(query, { limit: selectedVaultId ? 100 : 20, tags, vaultId: selectedVaultId });
+    if (run.parsed.problems.length > 0) {
+      this.resultsContainerEl.createDiv({ text: run.parsed.problems.join(' · '), cls: 'mvn-sp-problems mvn-text-muted' });
+    }
 
     const sortOpt = this.sortFilterEl?.value || 'Relevance';
     if (sortOpt === 'Date (Newest)') {
