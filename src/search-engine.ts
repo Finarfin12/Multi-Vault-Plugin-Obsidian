@@ -1,12 +1,48 @@
-import MiniSearch, { AsPlainObject, Options, SearchResult } from 'minisearch';
+import MiniSearch from 'minisearch';
 import { IndexDelta, IndexedFile } from './types';
 
-export interface MultiVaultSearchResult extends SearchResult {
-  file: IndexedFile;
+/**
+ * Type boundary for the search library.
+ *
+ * The Obsidian review bot cannot always resolve the types of `minisearch`
+ * (they then collapse to `any` and trigger no-unsafe-* warnings), so every
+ * value that comes out of the library is cast to the local shapes below
+ * exactly once, here, and nothing else in the plugin touches library types.
+ */
+interface RawSearchHit {
+  id: unknown;
+  score: number;
+  terms: string[];
+  queryTerms: string[];
+  match: Record<string, string[]>;
 }
 
-/** What is handed to MiniSearch: the cached metadata plus, in full-text mode, the note body (never stored in the cache). */
+/** What is handed to the search index: the cached metadata plus, in full-text mode, the note body (never stored in the cache). */
 type SearchDoc = IndexedFile & { body?: string };
+
+/** The few MiniSearch members this plugin uses, typed locally. */
+interface SearchIndex {
+  search(query: string, options?: { filter?: (hit: RawSearchHit) => boolean }): RawSearchHit[];
+  has(id: string): boolean;
+  add(doc: SearchDoc): void;
+  addAll(docs: SearchDoc[]): void;
+  replace(doc: SearchDoc): void;
+  discard(id: string): void;
+  removeAll(): void;
+  vacuum(): Promise<void>;
+  toJSON(): unknown;
+  readonly dirtCount: number;
+  readonly documentCount: number;
+}
+
+export interface MultiVaultSearchResult {
+  id: string;
+  score: number;
+  terms: string[];
+  queryTerms: string[];
+  match: Record<string, string[]>;
+  file: IndexedFile;
+}
 
 const normalizeTag = (tag: string) => tag.toLowerCase().replace(/^#+/, '');
 
@@ -20,53 +56,68 @@ function hasAllTags(file: IndexedFile, targets: string[]): boolean {
   return targets.map(normalizeTag).every(tt => fileTags.some(ft => ft === tt || ft.startsWith(`${tt}/`)));
 }
 
-function createOptions(): Options<SearchDoc> {
-  return {
-    fields: ['basename', 'relativePath', 'headingsStr', 'tagsStr', 'contentPreview', 'body'],
-    storeFields: ['id'],
-    extractField: (document, fieldName) => {
-      if (fieldName === 'headingsStr') {
-        return document.headings ? document.headings.join(' ') : '';
-      }
-      if (fieldName === 'tagsStr') {
-        return document.tags ? document.tags.join(' ') : '';
-      }
-      if (fieldName === 'body') {
-        return document.body ?? '';
-      }
-      if (fieldName === 'contentPreview' && document.body !== undefined) {
-        // The body already contains the preview text; do not count it twice
-        return '';
-      }
-      const val = document[fieldName as keyof IndexedFile];
-      if (val === undefined || val === null) return '';
-      if (typeof val === 'string') return val;
-      if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-      if (Array.isArray(val)) return val.map((v) => String(v)).join(' ');
-      return '';
+function extractField(document: SearchDoc, fieldName: string): string {
+  if (fieldName === 'headingsStr') {
+    return document.headings ? document.headings.join(' ') : '';
+  }
+  if (fieldName === 'tagsStr') {
+    return document.tags ? document.tags.join(' ') : '';
+  }
+  if (fieldName === 'body') {
+    return document.body ?? '';
+  }
+  if (fieldName === 'contentPreview' && document.body !== undefined) {
+    // The body already contains the preview text; do not count it twice
+    return '';
+  }
+  const val: unknown = document[fieldName as keyof IndexedFile];
+  if (val === undefined || val === null) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) return val.map((v) => String(v)).join(' ');
+  return '';
+}
+
+const INDEX_OPTIONS = {
+  fields: ['basename', 'relativePath', 'headingsStr', 'tagsStr', 'contentPreview', 'body'],
+  storeFields: ['id'],
+  extractField,
+  searchOptions: {
+    boost: {
+      basename: 5,
+      headingsStr: 3,
+      tagsStr: 3,
+      relativePath: 2,
+      contentPreview: 1,
+      body: 1
     },
-    searchOptions: {
-      boost: {
-        basename: 5,
-        headingsStr: 3,
-        tagsStr: 3,
-        relativePath: 2,
-        contentPreview: 1,
-        body: 1
-      },
-      fuzzy: 0.2,
-      prefix: true
-    }
-  };
+    fuzzy: 0.2,
+    prefix: true
+  }
+};
+
+/** The one place where a library value is trusted to have the local shape. */
+function castIndex(value: unknown): SearchIndex {
+  return value as SearchIndex;
+}
+
+/** Library boundary: create an empty index. */
+function createIndex(): SearchIndex {
+  return castIndex(new MiniSearch(INDEX_OPTIONS));
+}
+
+/** Library boundary: restore an index from its plain-object snapshot (throws when unusable). */
+function restoreIndex(snapshot: unknown): SearchIndex {
+  return castIndex(MiniSearch.loadJS(snapshot as never, INDEX_OPTIONS));
 }
 
 export class SearchEngine {
-  private miniSearch: MiniSearch<SearchDoc>;
+  private index: SearchIndex;
   private fileMap: Map<string, IndexedFile> = new Map();
   private allFilesCache: IndexedFile[] | null = null;
 
   constructor() {
-    this.miniSearch = new MiniSearch<SearchDoc>(createOptions());
+    this.index = createIndex();
   }
 
   /** Replace everything (metadata-only; no bodies). Kept for callers that do not use deltas. */
@@ -74,15 +125,15 @@ export class SearchEngine {
     this.fileMap.clear();
     files.forEach(f => this.fileMap.set(f.id, f));
     this.allFilesCache = null;
-    this.miniSearch.removeAll();
-    this.miniSearch.addAll(files);
+    this.index.removeAll();
+    this.index.addAll(files);
   }
 
   /** Drop every document. */
   public clear() {
     this.fileMap.clear();
     this.allFilesCache = null;
-    this.miniSearch.removeAll();
+    this.index.removeAll();
   }
 
   /**
@@ -91,23 +142,23 @@ export class SearchEngine {
    */
   public applyDelta(delta: IndexDelta, bodies?: Map<string, string>) {
     for (const id of delta.removed) {
-      if (this.miniSearch.has(id)) this.miniSearch.discard(id);
+      if (this.index.has(id)) this.index.discard(id);
       this.fileMap.delete(id);
     }
     for (const file of [...delta.added, ...delta.updated]) {
       const body = bodies?.get(file.id);
       const doc: SearchDoc = body === undefined ? file : { ...file, body };
-      if (this.miniSearch.has(file.id)) this.miniSearch.replace(doc);
-      else this.miniSearch.add(doc);
+      if (this.index.has(file.id)) this.index.replace(doc);
+      else this.index.add(doc);
       this.fileMap.set(file.id, file);
     }
     this.allFilesCache = null;
   }
 
   /** Serializable snapshot of the search index (vacuumed first so discarded documents are not stored). */
-  public async serialize(): Promise<AsPlainObject> {
-    if (this.miniSearch.dirtCount > 0) await this.miniSearch.vacuum();
-    return this.miniSearch.toJSON();
+  public async serialize(): Promise<unknown> {
+    if (this.index.dirtCount > 0) await this.index.vacuum();
+    return this.index.toJSON();
   }
 
   /**
@@ -117,9 +168,9 @@ export class SearchEngine {
   public loadFromCache(files: IndexedFile[], search: unknown): boolean {
     try {
       if (!search || typeof search !== 'object') return false;
-      const loaded = MiniSearch.loadJS<SearchDoc>(search as AsPlainObject, createOptions());
+      const loaded = restoreIndex(search);
       if (loaded.documentCount !== files.length) return false;
-      this.miniSearch = loaded;
+      this.index = loaded;
       this.fileMap.clear();
       files.forEach(f => this.fileMap.set(f.id, f));
       this.allFilesCache = null;
@@ -167,10 +218,10 @@ export class SearchEngine {
       return [];
     }
 
-    let results = this.miniSearch.search(query, {
-      filter: (result: SearchResult) => {
-        const id = result.id as string;
-        const file = this.fileMap.get(id);
+    const hits = this.index.search(query, {
+      filter: (hit: RawSearchHit) => {
+        if (typeof hit.id !== 'string') return false;
+        const file = this.fileMap.get(hit.id);
         if (!file) return false;
 
         if (options?.vaultId && file.vaultId !== options.vaultId) {
@@ -185,18 +236,16 @@ export class SearchEngine {
       }
     });
 
-    if (options?.limit && options.limit > 0) {
-      results = results.slice(0, options.limit);
-    }
+    const limited = options?.limit && options.limit > 0 ? hits.slice(0, options.limit) : hits;
 
-    // Map back to MultiVaultSearchResult
-    // MiniSearch's SearchResult.id is typed as `any`; cast to string explicitly.
-    return results.flatMap((r: SearchResult): MultiVaultSearchResult[] => {
-      const id = r.id as string;
-      const file = this.fileMap.get(id);
-      if (!file) return [];
-      return [{ id, terms: r.terms, queryTerms: r.queryTerms, score: r.score, match: r.match, file }];
-    });
+    const results: MultiVaultSearchResult[] = [];
+    for (const hit of limited) {
+      if (typeof hit.id !== 'string') continue;
+      const file = this.fileMap.get(hit.id);
+      if (!file) continue;
+      results.push({ id: hit.id, terms: hit.terms, queryTerms: hit.queryTerms, score: hit.score, match: hit.match, file });
+    }
+    return results;
   }
 
   public getRecentFiles(limit: number = 50, vaultId?: string): IndexedFile[] {
