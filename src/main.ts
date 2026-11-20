@@ -2,6 +2,7 @@ import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, MultiVaultSettings } from './types';
 import { VaultRegistry } from './vault-registry';
 import { Indexer } from './indexer/indexer';
+import { VaultWatcher } from './indexer/vault-watcher';
 import { SearchEngine } from './search-engine';
 import { FileOpener } from './file-opener';
 import { registerCrossVaultLinks } from './cross-vault-links';
@@ -24,24 +25,33 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
   indexer: Indexer;
   searchEngine: SearchEngine;
   fileOpener: FileOpener;
+  vaultWatcher: VaultWatcher;
 
   async onload() {
     await this.loadSettings();
 
     // Initialize core modules
     this.vaultRegistry = new VaultRegistry(this.app, this.settings);
-    
+    await this.vaultRegistry.initialize();
+
     // Save settings right away in case auto-detect added vaults
     this.settings.vaults = this.vaultRegistry.getVaults();
     await this.saveSettings();
 
-    this.indexer = new Indexer(this.app, this.vaultRegistry, this.settings, () => this.onIndexUpdated());
     this.searchEngine = new SearchEngine();
+    this.indexer = new Indexer(this.app, this.vaultRegistry, this.settings, this.searchEngine, () => this.onIndexUpdated());
     this.fileOpener = new FileOpener(this.app, this.vaultRegistry);
 
-    // Initialize indexer (load cache)
+    // Initialize indexer (load cache; search is ready right after this when the cache is usable)
     await this.indexer.initialize();
-    this.refreshSearchEngine();
+
+    // Watch enabled vaults so search follows changes made anywhere
+    this.vaultWatcher = new VaultWatcher({
+      getVaults: () => this.vaultRegistry.getVaults(),
+      getGlobalExcludes: () => this.settings.indexOptions.globalExcludePatterns || [],
+      onChanged: (vault, paths) => this.indexer.reconcilePaths(vault, paths)
+    });
+    this.syncWatchers();
 
     // Register custom views
     this.registerView(
@@ -104,7 +114,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
       id: 'multi-vault-search',
       name: 'Search all vaults',
       callback: () => {
-        new SearchModal(this.app, this.searchEngine, this.fileOpener).open();
+        new SearchModal(this.app, this.searchEngine, this.fileOpener, this.settings.indexOptions).open();
       }
     });
 
@@ -214,7 +224,13 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     });
 
     // Auto refresh index if needed (in a realistic app we would probably do it lazily or on a timer)
-    if (this.settings.indexOptions.autoRefreshOnStartup) {
+    // With a usable v3 cache search already works; the refresh only re-reads changed notes.
+    // A missing/old cache is rebuilt even when auto-refresh is off, otherwise search would stay empty.
+    if (this.indexer.needsInitialBuild()) {
+       window.setTimeout(() => {
+         void this.refreshIndexInBackground();
+       }, 1000);
+    } else if (this.settings.indexOptions.autoRefreshOnStartup) {
        // Using setTimeout to not block Obsidian startup
        window.setTimeout(() => {
          void this.refreshIndexInBackground();
@@ -223,7 +239,19 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
   }
 
   onunload() {
-    // Cleanup if needed
+    // No watcher or timer may outlive the plugin
+    this.vaultWatcher?.dispose();
+    this.indexer?.dispose();
+  }
+
+  /** Start/stop vault watchers to match the setting and the enabled vaults. */
+  public syncWatchers(): void {
+    if (!this.vaultWatcher) return;
+    if (this.settings.indexOptions.watchVaults === false) {
+      this.vaultWatcher.dispose();
+      return;
+    }
+    this.vaultWatcher.sync(this.vaultRegistry.getEnabledVaults());
   }
 
   async loadSettings() {
@@ -265,15 +293,8 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     if (leaf) await workspace.revealLeaf(leaf);
   }
 
-  refreshSearchEngine() {
-    this.searchEngine.indexFiles(this.indexer.getIndexedFiles());
-  }
-
-  /** Called by the indexer whenever its file list changes. */
+  /** Called by the indexer whenever its file list changes (search is updated by the indexer itself). */
   private onIndexUpdated() {
-    // The search engine is created after the indexer
-    if (!this.searchEngine) return;
-    this.refreshSearchEngine();
     this.refreshSidebar();
   }
 
