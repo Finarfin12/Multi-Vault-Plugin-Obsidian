@@ -5,6 +5,7 @@ import { FileEntry, FileScanner } from './file-scanner';
 import { MarkdownParser } from './markdown-parser';
 import { IndexStore } from './index-store';
 import { normalizeRelativePath } from './path-matcher';
+import { nextHistory } from '../analysis/digest';
 import { IndexDelta, IndexedFile, MultiVaultSettings, VaultConfig } from '../types';
 
 /** Counters of the last run, mainly so tests and the benchmark can prove that unchanged files are not re-parsed. */
@@ -299,6 +300,8 @@ export class Indexer {
       const batch = toParse.slice(i, i + PARSE_BATCH);
       const results = await Promise.all(batch.map(e => parser.parseMarkdownFileWithBody(e, vault)));
       results.forEach(r => {
+        // Keep the word-count history so a period summary can estimate words added
+        r.file.wordHistory = nextHistory(existing.get(r.file.relativePath), r.file);
         (existing.has(r.file.relativePath) ? updated : added).push(r.file);
         if (r.body !== undefined) bodies.set(r.file.id, r.body);
       });

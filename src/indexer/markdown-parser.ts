@@ -24,6 +24,12 @@ export function stripFrontmatter(content: string): string {
   return match ? content.substring(match[0].length) : content;
 }
 
+/** Number of words (runs of letters or digits, any script). */
+export function countWords(text: string): number {
+  const m = text.match(/[\p{L}\p{N}]+/gu);
+  return m ? m.length : 0;
+}
+
 /** Cut text to at most `maxBytes` UTF-8 bytes without leaving a broken character at the end. */
 export function truncateToBytes(text: string, maxBytes: number): string {
   // One UTF-16 unit takes at most 3 UTF-8 bytes, so a short string cannot exceed the limit
@@ -112,6 +118,8 @@ export class MarkdownParser {
       crossVaultLinks,
       mtime: file.mtime,
       size: file.size,
+      ctime: file.ctime,
+      wordCount: countWords(textContent),
       contentPreview: preview
     };
 

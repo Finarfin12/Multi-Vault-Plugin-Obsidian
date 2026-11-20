@@ -69,7 +69,7 @@ export default class MultiVaultNavigatorPlugin extends Plugin {
     );
     this.registerView(
       VIEW_TYPE_DAILY_DASHBOARD,
-      (leaf) => new DailyDashboardView(leaf, this.indexer, this.fileOpener)
+      (leaf) => new DailyDashboardView(leaf, this)
     );
     this.registerView(
       VIEW_TYPE_SIDEBAR,

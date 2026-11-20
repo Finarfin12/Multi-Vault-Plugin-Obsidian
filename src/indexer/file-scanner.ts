@@ -10,6 +10,8 @@ export interface FileEntry {
   extension: string;
   mtime: number;
   size: number;
+  /** Creation time, when the file system reports one. */
+  ctime?: number;
 }
 
 export class FileScanner {
@@ -69,7 +71,8 @@ export class FileScanner {
           basename: path.basename(name, '.md'),
           extension: '.md',
           mtime: stats.mtimeMs,
-          size: stats.size
+          size: stats.size,
+          ctime: stats.birthtimeMs > 0 ? stats.birthtimeMs : undefined
         };
       } catch {
         return null; // vanished or unreadable
