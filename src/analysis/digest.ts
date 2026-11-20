@@ -14,7 +14,7 @@ export interface DigestRange {
 
 export type RangeKey = 'today' | '7d' | 'custom';
 
-const pad = (n: number) => String(n).padStart(2, '0');
+const pad = (n: number) => (n < 10 ? '0' : '') + String(n);
 
 /** `YYYY-MM-DD` in local time. */
 export function formatDay(ms: number): string {

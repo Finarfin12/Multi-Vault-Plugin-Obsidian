@@ -1,0 +1,52 @@
+name: Release
+
+# Pushing a version tag (for example 2.5.1) builds the plugin from that exact commit,
+# attests the release files (GitHub artifact attestations) and publishes the GitHub release.
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check that the tag matches manifest.json
+        run: test "$(node -p "require('./manifest.json').version")" = "${GITHUB_REF_NAME}"
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          MVN_SKIP_COPY: '1'
+
+      - name: Attest release files
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          awk -v v="${GITHUB_REF_NAME}" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > release-notes.md
+          gh release create "${GITHUB_REF_NAME}" main.js manifest.json styles.css \
+            --title "${GITHUB_REF_NAME}" --notes-file release-notes.md --verify-tag

@@ -215,7 +215,8 @@ export function matchesFilters(file: IndexedFile, q: ParsedQuery): boolean {
 
 /** Words to highlight in results (plain words and the words of phrases). */
 export function highlightTermsOf(q: ParsedQuery): string[] {
-  const words = [...q.text.split(/\s+/), ...q.phrases.flatMap(p => p.split(/\s+/))];
+  const words: string[] = q.text.split(/\s+/);
+  for (const phrase of q.phrases) words.push(...phrase.split(/\s+/));
   return Array.from(new Set(words.filter(w => w.length > 0)));
 }
 
