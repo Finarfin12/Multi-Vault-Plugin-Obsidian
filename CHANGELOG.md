@@ -2,6 +2,30 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.4.0] - 2026-11-20 — "Foundation"
+First phase of the 2.4 → 2.7 roadmap: a faster, always-current, full-text index.
+
+### Added
+- **Full-text search with excerpts (F1)**: the whole note text is indexed (not only title, tags and the first lines). Results show an excerpt cut around the matched word, read from the note on demand (the note text itself is never stored in the cache). New settings **Full-text search** (default on) and **Max indexed size per note** (default 200,000 bytes).
+- **Incremental index (F2)**: a refresh diffs the disk against the index by modification time and size and re-reads only new or changed notes; vanished files are dropped. Search is updated per change instead of being rebuilt.
+- **Vault watcher (F2)**: enabled vaults are watched (`fs.watch`, recursive) and changes reach search within a few seconds, including edits made outside Obsidian. Falls back to a once-a-minute check where watching is not possible. Stops when a vault is disabled or removed, when the setting **Watch vaults for changes** is turned off, and when the plugin unloads.
+- **Automated tests (F6)**: `npm test` (Node's built-in runner, no new dependency) with 71 tests, including characterization tests of the 2.3.4 behaviour. `scripts/gen-fixture-vault.mjs` and `scripts/bench.mjs` build a 5,000-note fixture and measure performance (not shipped).
+
+### Changed
+- **Cache format v3 (F3)**: the search index is saved with the file list, so search is ready right after startup. A v2 (or damaged) cache is discarded and rebuilt automatically, with no error. With **Store Snippets in Cache** off, neither previews nor the search index are written to disk and the index is rebuilt at every start.
+- **Async file reads (F4)**: the read-only view, the duplicate comparison, vault detection and the Move/Copy existence check no longer block Obsidian while reading files. Vault registration (`VaultRegistry.initialize`, `addVault`, `validateVaultPath`) is now asynchronous.
+- **`obsidian` types pinned (F6)**: `devDependencies.obsidian` is `1.13.0` instead of `latest`, so builds are reproducible.
+- Building with `MVN_SKIP_COPY=1` skips copying the files into the author's local test vault.
+
+### Behavior change: exclude patterns (F5)
+Exclude patterns (global and per vault) used to match **any part** of a path, case-insensitively, so `art` also hid `smart/` and `Article/`. They now match **whole folder/file names** (case-insensitive, any depth) and support globs:
+- `Private` → any folder or note named `Private`; not `Privateer/`. A bare name also matches `Name.md`.
+- `notes/archive` → that folder path anywhere; `draft-*` → any name starting with `draft-`; `**/draft-*` → matched against the whole path (`*` within one name, `?` one character, `**` across folders).
+- If you relied on the old substring behaviour, write the pattern as a glob such as `*art*`. Include patterns are unchanged (still substring).
+- Newly excluded notes disappear from the index on the next refresh; no manual rebuild is needed.
+
+### Not verified yet
+- Manual checks inside Obsidian (Command Center excerpts, settings screen, restart behaviour, mobile is not supported) were not run for this release; see the release report.
 
 ## [2.3.4] - 2026-10-30
 ### Fixed

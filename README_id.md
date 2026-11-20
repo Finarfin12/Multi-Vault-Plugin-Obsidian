@@ -8,6 +8,13 @@ Dibuat oleh **Hir43th**.
 
 ## Fitur Utama
 
+### Pencarian teks penuh & indeks yang selalu segar (2.4.0)
+- **Cari seluruh isi catatan, bukan hanya judul.** Kata apa pun di catatan mana pun bisa ditemukan, dan tiap hasil menampilkan cuplikan yang dipotong di sekitar bagian yang cocok (sampai batas `Max indexed size per note`, default 200 KB, agar satu file raksasa tidak memperlambat apa pun).
+- **Indeks inkremental.** *Refresh* hanya membaca ulang catatan yang berubah (berdasarkan waktu ubah dan ukuran). File yang tidak berubah tidak diparse lagi, jadi me-*refresh* ±5.000 catatan selesai jauh di bawah satu detik.
+- **Pembaruan langsung.** Dengan **Watch vaults for changes** aktif, perubahan, file baru, dan penghapusan di vault mana pun yang aktif — termasuk yang dilakukan di luar Obsidian — muncul di pencarian dalam beberapa detik. Jika sistem tidak bisa memantau sebuah folder, plugin memeriksa ulang setiap satu menit.
+- **Start cepat.** Indeks pencarian disimpan di *cache* (format v3), sehingga pencarian langsung siap setelah Obsidian dibuka. *Cache* lama dibuang dan dibangun ulang otomatis.
+- **Pola exclude cocok per nama utuh.** Lihat [Pengaturan](#pengaturan-settings); ini memperbaiki `art` yang ikut menyembunyikan `smart/` dan `Article/`.
+
 ### 1. Google-like Search Page (Pencarian Lintas Vault)
 Daripada harus mengingat di vault mana kamu menyimpan sebuah catatan, cukup gunakan **Search Page**.
 - Buka melalui tombol kaca pembesar (🔍) di **Ribbon Sidebar** kiri.
@@ -56,7 +63,15 @@ Di menu **Settings > Multi-Vault Navigator**, kamu dapat mengatur:
 - **Daftar Vault**: Menghidupkan/mematikan indeks untuk vault tertentu, atau menghapus vault dari daftar.
 - **Add Manual Vault**: Menambahkan absolute path (`C:/...` atau `/Users/...`) jika ada vault yang tidak terdeteksi otomatis.
 - **Max Preview Characters**: Menentukan seberapa panjang cuplikan teks (*snippet*) yang disimpan untuk pencarian (default: 1000 karakter).
-- **Global Exclude Patterns**: Daftar nama folder atau file yang dipisahkan koma (misal: `Private, Rahasia, diary.md`) agar tidak ikut terindeks di seluruh vault (sangat berguna untuk menjaga privasi catatan tertentu).
+- **Full-text search** (default aktif): Mencari seluruh isi setiap catatan. Mengubahnya akan membaca ulang semua catatan.
+- **Max indexed size per note (bytes)** (default 200000, minimal 1000): Hanya bagian awal catatan yang sangat besar yang dicari.
+- **Watch vaults for changes** (default aktif): Memperbarui pencarian otomatis saat catatan di vault aktif mana pun berubah.
+- **Store Snippets in Cache** (default aktif): Ikut menyimpan indeks pencarian yang dibangun dari isi catatanmu. Matikan jika folder konfigurasi vault aktif dibagikan atau dipublikasikan; indeks lalu dibangun ulang setiap kali start.
+- **Global Exclude Patterns**: Daftar pola yang dipisahkan koma untuk diabaikan di seluruh vault (sangat berguna untuk menjaga privasi catatan tertentu). Pola dicocokkan dengan nama folder/file yang utuh, bukan sebagian nama:
+  - `Private` mengecualikan folder atau catatan bernama `Private` (di kedalaman berapa pun, huruf besar/kecil bebas), tetapi tidak `Privateer/`.
+  - `notes/archive` mengecualikan jalur folder itu di mana pun muncul.
+  - `draft-*` dan `**/draft-*` memakai glob: `*` = karakter apa pun dalam satu nama, `?` = satu karakter, `**` = lintas folder.
+  - **Berubah di 2.4.0:** dulu pola cocok dengan bagian mana pun dari jalur (`art` ikut mengecualikan `smart/` dan `Article/`). Jika kamu mengandalkan itu, tulis pola sebagai glob, misalnya `*art*`.
 - **Refresh Index**: Tombol manual untuk membangun ulang indeks pencarian.
 
 ---
@@ -65,8 +80,17 @@ Di menu **Settings > Multi-Vault Navigator**, kamu dapat mengatur:
 
 Plugin ini 100% **Local-First**:
 - Tidak ada data yang dikirim ke internet atau *cloud*.
-- Indeks pencarian disimpan secara lokal dalam bentuk `.json` di dalam folder plugin `.obsidian/plugins/multi-vault-navigator/`.
+- Indeks pencarian disimpan secara lokal dalam bentuk `.json` di dalam folder plugin `.obsidian/plugins/multi-vault-navigator/` milik vault yang *aktif*. Sejak 2.4.0 indeks ini dibangun dari teks penuh catatanmu; jika folder konfigurasi itu kamu sinkronkan atau publikasikan, matikan **Store Snippets in Cache** (tidak ada isi catatan yang ditulis ke *cache*, indeks dibangun ulang setiap start).
+- Sejak 2.4.0 plugin memantau folder vault yang aktif dengan `fs.watch` bawaan Node (hanya-baca: ia hanya tahu sebuah file berubah, lalu membaca ulang file itu). Bisa dimatikan di pengaturan.
 - Memanfaatkan library `minisearch` yang sangat ringan dan berjalan sepenuhnya di memori komputermu tanpa aplikasi *server* eksternal.
+
+---
+
+## Pengembangan
+
+- `npm test` menjalankan tes otomatis (test runner bawaan Node, tanpa dependensi tambahan).
+- `npm run lint` dan `npm run build` harus selesai tanpa error. Setel `MVN_SKIP_COPY=1` untuk *build* tanpa menyalin file ke vault uji lokal milik pembuat.
+- `node scripts/gen-fixture-vault.mjs <dir> 5000` membuat fixture sintetis 3 vault dan `node scripts/bench.mjs <dir>` mencetak angka kinerja (bukan bagian dari rilis).
 
 ---
 
