@@ -1,6 +1,16 @@
 import { App } from 'obsidian';
 import { IndexCache, IndexedFile } from '../types';
 
+/** Current cache format: file metadata + serialized search index. Older formats are discarded and rebuilt. */
+export const CACHE_VERSION = 3;
+
+export interface LoadedIndex {
+  files: IndexedFile[];
+  /** Serialized search index; null when the cache was written without it. */
+  search: unknown;
+  parseSignature: string | null;
+}
+
 export class IndexStore {
   private app: App;
   private readonly CACHE_FILE = 'index-cache.json';
@@ -9,7 +19,16 @@ export class IndexStore {
     this.app = app;
   }
 
-  public async saveIndex(files: IndexedFile[], storeSnippets: boolean = true): Promise<void> {
+  /**
+   * Write the cache. When `storeSnippets` is false neither the previews nor the
+   * search index (which holds the words of every note) are written to disk.
+   */
+  public async saveIndex(
+    files: IndexedFile[],
+    search: unknown,
+    storeSnippets: boolean = true,
+    parseSignature?: string
+  ): Promise<void> {
     const filesToCache = storeSnippets ? files : files.map(f => {
       const copy = { ...f };
       delete copy.contentPreview;
@@ -17,53 +36,47 @@ export class IndexStore {
     });
 
     const cache: IndexCache = {
-      version: 2,
+      version: CACHE_VERSION,
       generatedAt: new Date().toISOString(),
+      parseSignature,
       files: filesToCache
     };
+    if (storeSnippets && search) cache.search = search;
 
-    const dataPath = this.getPluginDataPath();
-    if (dataPath) {
-      // Obsidian's adapter handles vault-relative paths
-      // The plugin data folder is at .obsidian/plugins/multi-vault-navigator
-      const pluginDir = this.app.vault.configDir + '/plugins/multi-vault-navigator';
-      const filePath = `${pluginDir}/${this.CACHE_FILE}`;
-      
-      // We must ensure the dir exists, though it should if settings are saved
-      const exists = await this.app.vault.adapter.exists(pluginDir);
-      if (!exists) {
-        await this.app.vault.adapter.mkdir(pluginDir);
-      }
-      
-      await this.app.vault.adapter.write(filePath, JSON.stringify(cache));
+    const pluginDir = this.getPluginDir();
+    const filePath = `${pluginDir}/${this.CACHE_FILE}`;
+
+    // The folder normally exists because settings are saved there
+    const exists = await this.app.vault.adapter.exists(pluginDir);
+    if (!exists) {
+      await this.app.vault.adapter.mkdir(pluginDir);
     }
+
+    await this.app.vault.adapter.write(filePath, JSON.stringify(cache));
   }
 
-  public async loadIndex(): Promise<IndexedFile[]> {
-    const dataPath = this.getPluginDataPath();
-    if (dataPath) {
-      const pluginDir = this.app.vault.configDir + '/plugins/multi-vault-navigator';
-      const filePath = `${pluginDir}/${this.CACHE_FILE}`;
-      
-      try {
-        const exists = await this.app.vault.adapter.exists(filePath);
-        if (exists) {
-          const content = await this.app.vault.adapter.read(filePath);
-          const cache = JSON.parse(content) as IndexCache;
-          if (cache.version === 2) {
-            return cache.files || [];
-          }
-        }
-      } catch {
-        return [];
-      }
+  /** Load the cache, or null when it is missing, unreadable or an older format (caller rebuilds). */
+  public async loadIndex(): Promise<LoadedIndex | null> {
+    const filePath = `${this.getPluginDir()}/${this.CACHE_FILE}`;
+
+    try {
+      const exists = await this.app.vault.adapter.exists(filePath);
+      if (!exists) return null;
+      const content = await this.app.vault.adapter.read(filePath);
+      const cache = JSON.parse(content) as IndexCache;
+      if (cache.version !== CACHE_VERSION || !Array.isArray(cache.files)) return null;
+      return {
+        files: cache.files,
+        search: cache.search ?? null,
+        parseSignature: cache.parseSignature ?? null
+      };
+    } catch {
+      return null;
     }
-    return [];
   }
 
   public async clearIndex(): Promise<void> {
-    const pluginDir = this.app.vault.configDir + '/plugins/multi-vault-navigator';
-    const filePath = `${pluginDir}/${this.CACHE_FILE}`;
+    const filePath = `${this.getPluginDir()}/${this.CACHE_FILE}`;
     try {
       const exists = await this.app.vault.adapter.exists(filePath);
       if (exists) {
@@ -74,8 +87,7 @@ export class IndexStore {
     }
   }
 
-  private getPluginDataPath(): string | null {
-    // using Obsidian's built-in configDir
-    return this.app.vault.configDir;
+  private getPluginDir(): string {
+    return this.app.vault.configDir + '/plugins/multi-vault-navigator';
   }
 }

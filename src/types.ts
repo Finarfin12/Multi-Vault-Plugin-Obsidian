@@ -31,6 +31,21 @@ export interface IndexOptions {
   autoRefreshOnStartup: boolean;
   globalExcludePatterns: string[];
   storeSnippetsInCache: boolean;
+  /** Index the whole note text (not only the preview) so any word can be found. */
+  fullText: boolean;
+  /** Only the first N bytes of a note are indexed (full-text mode). */
+  maxIndexedBytes: number;
+  /** Watch enabled vaults and update the index when files change. */
+  watchVaults: boolean;
+}
+
+/** What changed in one vault since the last index run. */
+export interface IndexDelta {
+  vaultId: string;
+  added: IndexedFile[];
+  updated: IndexedFile[];
+  /** Ids of files that no longer exist (or are now excluded). */
+  removed: string[];
 }
 
 export interface MultiVaultSettings {
@@ -42,10 +57,15 @@ export interface MultiVaultSettings {
   ignoredVaultPaths?: string[];
 }
 
+/** Cache format 3: file metadata plus the serialized search index. Format 2 is discarded and rebuilt. */
 export interface IndexCache {
   version: number;
   generatedAt: string;
+  /** Settings that shape what is parsed; a change forces a full re-read. */
+  parseSignature?: string;
   files: IndexedFile[];
+  /** MiniSearch index (as plain object). Absent when snippets are not stored in the cache. */
+  search?: unknown;
 }
 
 export const DEFAULT_SETTINGS: MultiVaultSettings = {
@@ -54,7 +74,10 @@ export const DEFAULT_SETTINGS: MultiVaultSettings = {
     maxPreviewChars: 1000,
     autoRefreshOnStartup: true,
     globalExcludePatterns: [],
-    storeSnippetsInCache: true
+    storeSnippetsInCache: true,
+    fullText: true,
+    maxIndexedBytes: 200000,
+    watchVaults: true
   },
   savedSearches: [],
   pinnedFiles: [],

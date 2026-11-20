@@ -1,5 +1,5 @@
 import { App, Modal, Notice } from 'obsidian';
-import * as fs from 'fs';
+import { readTextOrNull } from '../fs-async';
 import { Indexer } from '../indexer/indexer';
 import { IndexedFile } from '../types';
 import { FileOpener } from '../file-opener';
@@ -64,13 +64,13 @@ export class DuplicateDetectorModal extends Modal {
           rightSelect.value = '1';
           const btnCompare = compareBar.createEl('button', { text: 'Compare' });
           btnCompare.onclick = () => {
-             this.renderDiff(group, arr[Number(leftSelect.value)], arr[Number(rightSelect.value)]);
+             void this.renderDiff(group, arr[Number(leftSelect.value)], arr[Number(rightSelect.value)]);
           };
        }
     });
   }
 
-  private renderDiff(group: HTMLElement, a: IndexedFile, b: IndexedFile): void {
+  private async renderDiff(group: HTMLElement, a: IndexedFile, b: IndexedFile): Promise<void> {
     const existing = group.querySelector('.mvn-diff-output');
     if (existing) existing.remove();
 
@@ -80,17 +80,13 @@ export class DuplicateDetectorModal extends Modal {
       return;
     }
 
-    let textA = '';
-    let textB = '';
-    try {
-      textA = fs.readFileSync(a.absolutePath, 'utf8');
-    } catch {
+    const [textA, textB] = await Promise.all([readTextOrNull(a.absolutePath), readTextOrNull(b.absolutePath)]);
+    if (!output.isConnected) return; // a newer comparison replaced this one while reading
+    if (textA === null) {
       output.createEl('p', { text: `Failed to read ${a.relativePath}`, cls: 'mvn-text-muted' });
       return;
     }
-    try {
-      textB = fs.readFileSync(b.absolutePath, 'utf8');
-    } catch {
+    if (textB === null) {
       output.createEl('p', { text: `Failed to read ${b.relativePath}`, cls: 'mvn-text-muted' });
       return;
     }

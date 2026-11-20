@@ -1,12 +1,13 @@
 {
   "name": "multi-vault-navigator",
-  "version": "2.3.4",
+  "version": "2.4.0",
   "description": "Cross-vault search and navigation.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "node scripts/run-tests.mjs"
   },
   "keywords": [
     "obsidian",
@@ -21,7 +22,7 @@
     "esbuild": "^0.20.0",
     "eslint": "^9.39.5",
     "eslint-plugin-obsidianmd": "^0.4.2",
-    "obsidian": "latest",
+    "obsidian": "1.13.0",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
   },

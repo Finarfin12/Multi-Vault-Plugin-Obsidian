@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, setIcon, ViewStateResult } from 'obsidian';
-import * as fs from 'fs';
 import * as path from 'path';
+import { readText } from '../fs-async';
 import { IndexedFile } from '../types';
 import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
@@ -17,6 +17,7 @@ interface ExternalFileViewState {
 export class ExternalFileView extends ItemView {
   private file: IndexedFile | null = null;
   private content: string = "";
+  private loadToken = 0;
   private searchEngine: SearchEngine;
   private fileOpener: FileOpener;
 
@@ -66,11 +67,16 @@ export class ExternalFileView extends ItemView {
 
   public async setFile(file: IndexedFile) {
     this.file = file;
+    const token = ++this.loadToken;
+    let content: string;
     try {
-      this.content = fs.readFileSync(file.absolutePath, 'utf8');
+      // Async read: a multi-MB note must not freeze the UI thread
+      content = await readText(file.absolutePath);
     } catch {
-      this.content = `> [!ERROR] Failed to read file from path: ${file.absolutePath}`;
+      content = `> [!ERROR] Failed to read file from path: ${file.absolutePath}`;
     }
+    if (token !== this.loadToken) return; // a newer setFile() superseded this one
+    this.content = content;
     // Persist the new file so the tab survives a restart
     this.app.workspace.requestSaveLayout();
     void this.render();

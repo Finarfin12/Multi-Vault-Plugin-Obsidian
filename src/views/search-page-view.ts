@@ -1,6 +1,8 @@
 import { ItemView, WorkspaceLeaf, setIcon, Notice, sanitizeHTMLToDom } from 'obsidian';
 import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
+import { IndexedFile } from '../types';
+import { buildSnippet, loadSnippet } from '../search/snippet';
 
 import MultiVaultNavigatorPlugin from '../main';
 import { PromptModal } from '../modals/prompt-modal';
@@ -200,7 +202,7 @@ export class SearchPageView extends ItemView {
        }).open();
     };
 
-    results.forEach(result => {
+    results.forEach((result, resultIndex) => {
       const file = result.file;
       const itemEl = this.resultsContainerEl.createDiv({ cls: 'mvn-sp-result-item' });
       
@@ -236,6 +238,7 @@ export class SearchPageView extends ItemView {
         const matchTerms = Object.keys(result.match || {});
         const highlightTerms = [...new Set([...matchTerms, ...queryParts])];
         snippetEl.appendChild(sanitizeHTMLToDom(this.getHighlightedSnippet(file.contentPreview, highlightTerms)));
+        if (resultIndex < 20) this.showMatchedExcerpt(snippetEl, file, matchTerms.length > 0 ? matchTerms : queryParts);
       }
 
       if (file.tags && file.tags.length > 0) {
@@ -261,6 +264,22 @@ export class SearchPageView extends ItemView {
          await this.plugin.saveSettings();
          this.plugin.refreshSidebar();
       };
+    });
+  }
+
+  /**
+   * Full-text hits can lie beyond the stored preview. When the preview does not
+   * contain the matched word, read the note (async) and show the part that matched.
+   */
+  private showMatchedExcerpt(snippetEl: HTMLElement, file: IndexedFile, terms: string[]): void {
+    const options = this.plugin.settings.indexOptions;
+    if (options.fullText === false || terms.length === 0) return;
+    if (buildSnippet(file.contentPreview ?? '', terms).matched) return;
+
+    void loadSnippet(file, terms, options.maxIndexedBytes).then(snippet => {
+      if (!snippet || !snippet.matched || !snippetEl.isConnected) return; // results were re-rendered meanwhile
+      snippetEl.empty();
+      snippetEl.appendChild(sanitizeHTMLToDom(this.getHighlightedSnippet(snippet.text, terms)));
     });
   }
 

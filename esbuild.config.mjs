@@ -49,16 +49,19 @@ if (prod) {
 	await context.watch();
 }
 
-// Auto-copy to target vault
+// Auto-copy to the developer's own test vault. Set MVN_SKIP_COPY=1 to build without touching it (CI, release builds).
+const skipCopy = process.env.MVN_SKIP_COPY === "1";
 const targetDir = "C:\\hermes-memory\\.obsidian\\plugins\\multi-vault-navigator";
-if (!fs.existsSync(targetDir)) {
+if (!skipCopy && !fs.existsSync(targetDir)) {
 	fs.mkdirSync(targetDir, { recursive: true });
 }
 try {
-	fs.copyFileSync("main.js", path.join(targetDir, "main.js"));
-	fs.copyFileSync("manifest.json", path.join(targetDir, "manifest.json"));
-	fs.copyFileSync("styles.css", path.join(targetDir, "styles.css"));
-	console.log(`\n✅ Successfully copied build files to: ${targetDir}`);
+	if (!skipCopy) {
+		fs.copyFileSync("main.js", path.join(targetDir, "main.js"));
+		fs.copyFileSync("manifest.json", path.join(targetDir, "manifest.json"));
+		fs.copyFileSync("styles.css", path.join(targetDir, "styles.css"));
+		console.log(`\n✅ Successfully copied build files to: ${targetDir}`);
+	}
 } catch (e) {
 	console.error("Failed to copy files to target vault:", e);
 }

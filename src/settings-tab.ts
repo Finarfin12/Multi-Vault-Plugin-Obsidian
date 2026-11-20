@@ -119,7 +119,7 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
                   .onClick(async () => {
                     if (this.newVaultPath) {
                       const name = this.newVaultPath.split(/[/\\]/).pop() || "Unnamed Vault";
-                      const success = this.vaultRegistry.addVault({
+                      const success = await this.vaultRegistry.addVault({
                         id: `vault-${Date.now()}`,
                         name,
                         path: this.newVaultPath,
@@ -186,8 +186,53 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
             }
           },
           {
+            name: "Full-text search",
+            desc: "Search the whole text of every note, not only its title, tags and first lines. Changing this re-reads all notes.",
+            render: (setting: Setting) => {
+              setting.addToggle(toggle => toggle
+                .setValue(this.plugin.settings.indexOptions.fullText !== false)
+                .onChange(async (value) => {
+                  this.plugin.settings.indexOptions.fullText = value;
+                  await this.plugin.saveSettings();
+                  this.scheduleRebuild();
+                })
+              );
+            }
+          },
+          {
+            name: "Max indexed size per note (bytes)",
+            desc: "Only the first part of a very large note is searched, so one huge file cannot slow indexing. Minimum 1,000.",
+            render: (setting: Setting) => {
+              setting.addText(text => text
+                .setValue(String(this.plugin.settings.indexOptions.maxIndexedBytes))
+                .onChange(async (value) => {
+                  const parsed = parseInt(value, 10);
+                  if (!isNaN(parsed) && parsed >= 1000) {
+                    this.plugin.settings.indexOptions.maxIndexedBytes = parsed;
+                    await this.plugin.saveSettings();
+                    this.scheduleRebuild();
+                  }
+                })
+              );
+            }
+          },
+          {
+            name: "Watch vaults for changes",
+            desc: "Update search results automatically when notes change in any enabled vault, including edits made outside Obsidian. Falls back to a once-a-minute check when the system cannot watch a folder.",
+            render: (setting: Setting) => {
+              setting.addToggle(toggle => toggle
+                .setValue(this.plugin.settings.indexOptions.watchVaults !== false)
+                .onChange(async (value) => {
+                  this.plugin.settings.indexOptions.watchVaults = value;
+                  await this.plugin.saveSettings();
+                  this.plugin.syncWatchers();
+                })
+              );
+            }
+          },
+          {
             name: "Store Snippets in Cache",
-            desc: "Warning: If enabled, note previews from all vaults are saved to a local JSON file in your active vault. Disable this if you regularly push your active vault's config folder to public repos, as it may leak cross-vault contents.",
+            desc: "Warning: If enabled, note previews and the search index built from your notes' full text are saved to a local JSON file in your active vault. Disable this if you regularly push your active vault's config folder to public repos, as it may leak cross-vault contents. When disabled, the index is rebuilt from your notes at every start (slower start).",
             render: (setting: Setting) => {
               setting.addToggle(toggle => toggle
                 .setValue(this.plugin.settings.indexOptions.storeSnippetsInCache !== false)
@@ -264,6 +309,8 @@ export class MultiVaultSettingsTab extends PluginSettingTab {
 
   /** Debounced so typing or toggling several settings rebuilds once. */
   private scheduleRebuild(): void {
+    // Vault list or enabled state may have changed: start/stop file watchers right away
+    this.plugin.syncWatchers();
     if (this.rebuildTimeout !== null) {
       window.clearTimeout(this.rebuildTimeout);
     }

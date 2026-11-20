@@ -1,7 +1,7 @@
 import { App, FileSystemAdapter, Notice } from 'obsidian';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { isDirectory, pathExists, readTextOrNull } from './fs-async';
 import { VaultConfig, MultiVaultSettings } from './types';
 
 export class VaultRegistry {
@@ -17,15 +17,22 @@ export class VaultRegistry {
     if (settings.vaults) {
       settings.vaults.forEach(v => this.vaults.set(v.id, v));
     }
+  }
 
+  /**
+   * Detect the current vault and the other vaults known to Obsidian.
+   * Async so reading obsidian.json and checking vault folders never blocks
+   * the UI thread; call once after construction.
+   */
+  public async initialize(): Promise<void> {
     // Vaults known to Obsidian, keyed by Obsidian's own vault id
-    const globalVaults = this.readGlobalVaults();
+    const globalVaults = await this.readGlobalVaults();
 
     // Auto-detect current vault if not in list
-    this.detectCurrentVault(globalVaults);
+    await this.detectCurrentVault(globalVaults);
 
     // Auto-detect other vaults from Obsidian global config
-    this.autoDetectGlobalVaults(globalVaults);
+    await this.autoDetectGlobalVaults(globalVaults);
   }
 
   public getVaults(): VaultConfig[] {
@@ -57,8 +64,8 @@ export class VaultRegistry {
     return undefined;
   }
 
-  public addVault(config: VaultConfig): boolean {
-    if (!this.validateVaultPath(config.path)) {
+  public async addVault(config: VaultConfig): Promise<boolean> {
+    if (!(await this.validateVaultPath(config.path))) {
       new Notice(`Invalid vault path: ${config.path}`);
       return false;
     }
@@ -88,15 +95,9 @@ export class VaultRegistry {
     this.vaults.delete(id);
   }
 
-  public validateVaultPath(vaultPath: string): boolean {
-    try {
-      const stats = fs.statSync(vaultPath);
-      if (!stats.isDirectory()) return false;
-      const obsidianFolder = path.join(vaultPath, this.app.vault.configDir);
-      return fs.existsSync(obsidianFolder) && fs.statSync(obsidianFolder).isDirectory();
-    } catch {
-      return false;
-    }
+  public async validateVaultPath(vaultPath: string): Promise<boolean> {
+    if (!(await isDirectory(vaultPath))) return false;
+    return isDirectory(path.join(vaultPath, this.app.vault.configDir));
   }
 
   public getCurrentVaultId(): string | null {
@@ -112,7 +113,7 @@ export class VaultRegistry {
     return null;
   }
 
-  private detectCurrentVault(globalVaults: Map<string, string>) {
+  private async detectCurrentVault(globalVaults: Map<string, string>): Promise<void> {
     if (this.app.vault.adapter instanceof FileSystemAdapter) {
       const basePath = this.app.vault.adapter.getBasePath();
       const existing = Array.from(this.vaults.values()).find(v => path.resolve(v.path) === path.resolve(basePath));
@@ -128,7 +129,7 @@ export class VaultRegistry {
             break;
           }
         }
-        this.addVault({
+        await this.addVault({
           id: globalId ?? `vault-${Date.now()}`,
           name: name,
           path: basePath,
@@ -138,7 +139,7 @@ export class VaultRegistry {
     }
   }
 
-  private autoDetectGlobalVaults(globalVaults: Map<string, string>) {
+  private async autoDetectGlobalVaults(globalVaults: Map<string, string>): Promise<void> {
     const ignored = this.settings.ignoredVaultPaths || [];
     for (const [key, vaultPath] of globalVaults) {
       const resolved = path.resolve(vaultPath);
@@ -147,7 +148,7 @@ export class VaultRegistry {
       // Check if already in our registry
       const existing = Array.from(this.vaults.values()).find(v => path.resolve(v.path) === resolved);
 
-      if (!existing && this.validateVaultPath(vaultPath)) {
+      if (!existing && await this.validateVaultPath(vaultPath)) {
         const name = path.basename(vaultPath);
         this.vaults.set(key, {
           id: key,
@@ -159,15 +160,16 @@ export class VaultRegistry {
     }
   }
 
-  private readGlobalVaults(): Map<string, string> {
+  private async readGlobalVaults(): Promise<Map<string, string>> {
     const result = new Map<string, string>();
     const obsidianJsonPath = this.getGlobalObsidianConfigPath();
-    if (!obsidianJsonPath || !fs.existsSync(obsidianJsonPath)) {
+    if (!obsidianJsonPath || !(await pathExists(obsidianJsonPath))) {
       return result;
     }
 
     try {
-      const data = fs.readFileSync(obsidianJsonPath, 'utf8');
+      const data = await readTextOrNull(obsidianJsonPath);
+      if (data === null) return result;
       interface ObsidianJson {
         vaults?: Record<string, { path?: string }>;
       }

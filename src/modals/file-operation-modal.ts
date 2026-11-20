@@ -1,6 +1,7 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import * as fs from 'fs';
 import * as path from 'path';
+import { pathExists } from '../fs-async';
 import { VaultRegistry } from '../vault-registry';
 import { Indexer } from '../indexer/indexer';
 
@@ -129,7 +130,7 @@ export class FileOperationModal extends Modal {
           const targetPath = path.join(targetVault.path, activeFile.name);
 
           try {
-            if (fs.existsSync(targetPath)) {
+            if (await pathExists(targetPath)) {
                new Notice(`File ${activeFile.name} already exists in target vault!`);
                return;
             }

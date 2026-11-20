@@ -2,14 +2,50 @@ import * as fs from 'fs';
 import { IndexedFile, VaultConfig } from '../types';
 import { FileEntry } from './file-scanner';
 
+export interface ParserOptions {
+  /** Return the note body so it can be full-text indexed. */
+  fullText: boolean;
+  /** Only the first N bytes of the body are returned. */
+  maxIndexedBytes: number;
+}
+
+export interface ParsedMarkdown {
+  file: IndexedFile;
+  /** Text after the frontmatter, cut to maxIndexedBytes. Present only in full-text mode; never stored in the cache. */
+  body?: string;
+}
+
+const FRONTMATTER_REGEX = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
+
+/** The note text without its YAML frontmatter. */
+export function stripFrontmatter(content: string): string {
+  const match = content.match(FRONTMATTER_REGEX);
+  return match ? content.substring(match[0].length) : content;
+}
+
+/** Cut text to at most `maxBytes` UTF-8 bytes without leaving a broken character at the end. */
+export function truncateToBytes(text: string, maxBytes: number): string {
+  // One UTF-16 unit takes at most 3 UTF-8 bytes, so a short string cannot exceed the limit
+  if (text.length * 3 <= maxBytes) return text;
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length <= maxBytes) return text;
+  return new TextDecoder('utf-8').decode(bytes.subarray(0, maxBytes)).replace(/�+$/, '');
+}
+
 export class MarkdownParser {
   private maxPreviewChars: number;
+  private options: ParserOptions;
 
-  constructor(maxPreviewChars: number = 1000) {
+  constructor(maxPreviewChars: number = 1000, options: Partial<ParserOptions> = {}) {
     this.maxPreviewChars = maxPreviewChars;
+    this.options = { fullText: options.fullText ?? false, maxIndexedBytes: options.maxIndexedBytes ?? 200000 };
   }
 
   public async parseMarkdownFileAsync(file: FileEntry, vault: VaultConfig): Promise<IndexedFile> {
+    return (await this.parseMarkdownFileWithBody(file, vault)).file;
+  }
+
+  public async parseMarkdownFileWithBody(file: FileEntry, vault: VaultConfig): Promise<ParsedMarkdown> {
     let content = '';
     try {
       content = await fs.promises.readFile(file.absolutePath, 'utf8');
@@ -59,7 +95,7 @@ export class MarkdownParser {
       .trim()
       .substring(0, this.maxPreviewChars);
 
-    return {
+    const indexed: IndexedFile = {
       id: `${vault.id}:${file.relativePath}`,
       vaultId: vault.id,
       vaultName: vault.name,
@@ -75,11 +111,13 @@ export class MarkdownParser {
       size: file.size,
       contentPreview: preview
     };
+
+    if (!this.options.fullText) return { file: indexed };
+    return { file: indexed, body: truncateToBytes(textContent, this.options.maxIndexedBytes) };
   }
 
   private extractFrontmatter(content: string): { frontmatter: Record<string, unknown> | undefined, textContent: string } {
-    const yamlRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
-    const match = content.match(yamlRegex);
+    const match = content.match(FRONTMATTER_REGEX);
     let frontmatter: Record<string, unknown> | undefined = undefined;
     let textContent = content;
 

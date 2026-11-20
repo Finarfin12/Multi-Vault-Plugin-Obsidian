@@ -38,6 +38,17 @@ declare module 'fs' {
     ): Promise<string>;
   }
 
+  interface FSWatcher {
+    close(): void;
+    on(event: 'error', listener: (err: Error) => void): this;
+  }
+
+  function watch(
+    path: string,
+    options: { recursive?: boolean; persistent?: boolean },
+    listener: (event: string, filename: string | null) => void
+  ): FSWatcher;
+
   function statSync(path: string): Stats;
   function existsSync(path: string): boolean;
   function readFileSync(path: string, encoding: BufferEncoding): string;
