@@ -91,3 +91,14 @@ test('map geometry: circle layout inside the canvas, size grows with note count,
   assert.notEqual(forward.y1, back.y1, 'opposite arrows are offset');
   assert.ok(forward.x1 >= 20 && forward.x2 <= 80, 'stops at the node borders');
 });
+
+test('createTargetResolver gives the same answers as findCrossVaultTarget', async () => {
+  const { createTargetResolver, findCrossVaultTarget } = await import('../src/links/link-parser');
+  const files = [file('A', 'x/Note.md'), file('A', 'Note.md'), file('B', 'dir/Other.md'), file('B', 'a/Same.md'), file('B', 'b/Same.md')];
+  const resolve = createTargetResolver(files);
+  const refs = [
+    { vaultName: 'a', noteName: 'note' }, { vaultName: 'B', noteName: 'Other' }, { vaultName: 'B', noteName: 'Same', notePath: 'b/Same' },
+    { vaultName: 'B', noteName: 'Same' }, { vaultName: 'C', noteName: 'Note' }, { vaultName: 'A', noteName: 'Missing' }
+  ];
+  for (const ref of refs) assert.equal(resolve(ref), findCrossVaultTarget(files, ref), JSON.stringify(ref));
+});

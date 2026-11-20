@@ -1,5 +1,5 @@
 import type { IndexedFile } from '../types';
-import { findCrossVaultTarget, parseCrossVaultRef } from '../links/link-parser';
+import { createTargetResolver, parseCrossVaultRef } from '../links/link-parser';
 
 /** The vault-to-vault link graph behind the cross-vault map (F12). */
 
@@ -46,6 +46,7 @@ export function buildVaultGraph(files: IndexedFile[], vaults: GraphVault[]): Vau
   const counts = new Map<string, number>();
   for (const f of files) counts.set(f.vaultId, (counts.get(f.vaultId) ?? 0) + 1);
 
+  const resolve = createTargetResolver(files);
   const nodes: GraphNode[] = vaults.map(v => ({ id: v.id, name: v.name, count: counts.get(v.id) ?? 0 }));
   const edges = new Map<string, GraphEdge>();
 
@@ -63,7 +64,7 @@ export function buildVaultGraph(files: IndexedFile[], vaults: GraphVault[]): Vau
         edges.set(key, edge);
       }
       const label = ref.notePath ?? ref.noteName;
-      const resolved = findCrossVaultTarget(files, ref);
+      const resolved = resolve(ref);
       edge.count++;
       edge.links.push({ source: file, target: label, resolved });
     }

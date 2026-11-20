@@ -10,6 +10,12 @@ import { loadSnippet } from '../src/search/snippet';
 import { readText } from '../src/fs-async';
 import { DEFAULT_SETTINGS, MultiVaultSettings, VaultConfig } from '../src/types';
 import { VaultRegistry } from '../src/vault-registry';
+import { runSearch } from '../src/search/run-search';
+import { parseQuery } from '../src/search/query-parser';
+import { findSimilarNotes } from '../src/analysis/similarity';
+import { stripFrontmatter, truncateToBytes } from '../src/indexer/markdown-parser';
+import { buildVaultGraph } from '../src/analysis/vault-graph';
+import { buildDigest, resolveRange } from '../src/analysis/digest';
 import { App } from 'obsidian';
 
 declare const gc: undefined | (() => void);
@@ -97,6 +103,25 @@ async function main() {
     engine.search(q, { limit: 20 });
     timings.push(performance.now() - t);
   }
+  // T24: the same measurement through the operator parser, with operator queries added
+  const opQueries = [...queries, 'vault:A tag:project', 'path:inbox modified:>30d', 'smart -art vault:B', 'project/alpha -tag:idea', 'meeting vault:C path:ideas'];
+  const opTimings: number[] = [];
+  for (const q of opQueries) {
+    t = performance.now();
+    await runSearch(engine, q, { limit: 20, maxIndexedBytes: settings.indexOptions.maxIndexedBytes });
+    opTimings.push(performance.now() - t);
+  }
+  results.T24_operatorQueries = opQueries.length;
+  results.T24_operatorSearchMedianMs = ms(median(opTimings));
+  results.T24_operatorSearchMaxMs = ms(Math.max(...opTimings));
+  t = performance.now();
+  for (let i = 0; i < 1000; i++) parseQuery('vault:A path:"x y" tag:idea -tag:draft -word modified:>7d "exact phrase" other');
+  results.T24_parseQueryMicros = ms(((performance.now() - t) / 1000) * 1000);
+  t = performance.now();
+  const phrase = await runSearch(engine, '"lorem ipsum" vault:A', { limit: 20, maxIndexedBytes: settings.indexOptions.maxIndexedBytes });
+  results.T14_phraseQueryMs = ms(performance.now() - t);
+  results.T14_phraseResults = phrase.results.length;
+
   results.K1_queries = queries.length;
   results.K1_searchMedianMs = ms(median(timings));
   results.K1_searchMaxMs = ms(Math.max(...timings));
@@ -119,6 +144,40 @@ async function main() {
   await indexer2.buildFullIndex(false, true);
   results.T7_refreshAfterWarmMs = ms(performance.now() - t);
   results.T7_parsedAfterWarm = indexer2.stats.parsedLastRun;
+
+  // --- F11/F12/F13 on the fixture ---------------------------------------------------
+  {
+    let maxGap = 0;
+    let last = performance.now();
+    const timer = setInterval(() => {
+      const now = performance.now();
+      maxGap = Math.max(maxGap, now - last);
+      last = now;
+    }, 4);
+    t = performance.now();
+    const sim = await findSimilarNotes(indexer2.getIndexedFiles(), {
+      threshold: 0.8,
+      read: async (f) => {
+        const raw = await readText(f.absolutePath).catch(() => null);
+        return raw === null ? null : truncateToBytes(stripFrontmatter(raw), settings.indexOptions.maxIndexedBytes);
+      }
+    });
+    clearInterval(timer);
+    results.T16_similarityMs = ms(performance.now() - t);
+    results.T16_similarityPairs = sim.pairs.length;
+    results.T16_similaritySkipped = sim.skipped;
+    results.T16_similarityMaxLoopGapMs = ms(maxGap);
+
+    t = performance.now();
+    const graph = buildVaultGraph(indexer2.getIndexedFiles(), vaults.map(v => ({ id: v.id, name: v.name })));
+    results.T17_graphMs = ms(performance.now() - t);
+    results.T17_graphEdges = graph.edges.map(e => e.from + '->' + e.to + ':' + e.count);
+
+    t = performance.now();
+    const digest = buildDigest(indexer2.getIndexedFiles(), resolveRange('7d', Date.now())!);
+    results.T18_digestMs = ms(performance.now() - t);
+    results.T18_digestVaults = digest.length;
+  }
 
   // --- T4: watcher latency (default 1.5 s debounce, real fs.watch) ------------------
   const watcher = new VaultWatcher({

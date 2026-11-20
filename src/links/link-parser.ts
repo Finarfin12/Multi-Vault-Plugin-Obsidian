@@ -139,6 +139,22 @@ export function findCrossVaultTarget(files: IndexedFile[], ref: CrossVaultRef): 
   });
 }
 
+/**
+ * Same answers as findCrossVaultTarget, but looks notes up in a map built once, so
+ * resolving thousands of links stays fast. Use it when resolving many references.
+ */
+export function createTargetResolver(files: IndexedFile[]): (ref: CrossVaultRef) => IndexedFile | undefined {
+  const byName = new Map<string, IndexedFile>();
+  for (const f of files) {
+    const key = `${f.vaultName.toLowerCase()}\u0000${f.basename.toLowerCase()}`;
+    if (!byName.has(key)) byName.set(key, f);
+  }
+  return (ref) => {
+    if (ref.notePath) return findCrossVaultTarget(files, ref); // rare: needs the path comparison
+    return byName.get(`${ref.vaultName.toLowerCase()}\u0000${ref.noteName.toLowerCase()}`);
+  };
+}
+
 /** Rebuild link text for a reference (used by autocomplete). */
 export function formatCrossVaultLink(ref: CrossVaultRef, embed = false): string {
   return `${embed ? '!' : ''}[[${ref.vaultName}::${ref.notePath ?? ref.noteName}${ref.heading ? `#${ref.heading}` : ''}]]`;
