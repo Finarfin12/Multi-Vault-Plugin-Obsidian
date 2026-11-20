@@ -12,16 +12,23 @@ export class FileOpener {
     this.vaultRegistry = vaultRegistry;
   }
 
-  public async openFile(file: IndexedFile) {
+  /**
+   * Open a note. `newTab` (default true) opens a new tab. With `newTab: false`
+   * a note of this vault replaces the current tab (like a normal link click) and
+   * a note of another vault reuses an already open read-only tab when there is one.
+   */
+  public async openFile(file: IndexedFile, options: { newTab?: boolean } = {}) {
+    const newTab = options.newTab !== false;
     const currentVaultId = this.vaultRegistry.getCurrentVaultId();
-    
+
     if (currentVaultId === file.vaultId) {
       // Same vault, open directly
-      await this.app.workspace.openLinkText(file.relativePath, '', true);
+      await this.app.workspace.openLinkText(file.relativePath, '', newTab);
     } else {
       // Other vault, open in our custom read-only tab
-      const leaf = this.app.workspace.getLeaf(true); // true = open in new tab
-      await leaf.setViewState({ type: VIEW_TYPE_EXTERNAL_FILE, active: true });
+      const existing = newTab ? undefined : this.app.workspace.getLeavesOfType(VIEW_TYPE_EXTERNAL_FILE)[0];
+      const leaf = existing ?? this.app.workspace.getLeaf(true); // true = open in new tab
+      if (!existing) await leaf.setViewState({ type: VIEW_TYPE_EXTERNAL_FILE, active: true });
       const view = leaf.view;
       if (view instanceof ExternalFileView) {
          await view.setFile(file);

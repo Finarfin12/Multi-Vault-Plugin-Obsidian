@@ -15,7 +15,7 @@ To comply with the [Obsidian Developer Policies](https://docs.obsidian.md/Plugin
   - **Why this is needed**: This plugin's core feature is searching and previewing notes from your *other* Obsidian vaults. To achieve this, it uses Node's native `fs` module to read the markdown contents of vaults you have configured or that were automatically detected from your OS's global Obsidian configuration (`obsidian.json`). Backlink detection and duplicate comparison also read those files locally to match `[[wikilinks]]`.
   - **Watching folders (2.4.0)**: To keep search current, the plugin watches your enabled vault folders for changes with Node's `fs.watch` (read-only; it only notices that a file changed and then re-reads that file). You can turn this off in settings; the plugin then re-checks only when you refresh.
   - **What is stored on disk (2.4.0)**: The search index, built from the full text of your notes, is saved in `.obsidian/plugins/multi-vault-navigator/index-cache.json` of the *active* vault so search is ready right after Obsidian starts. If you sync or publish that config folder, turn off **Store snippets in cache**: nothing from your notes is then written to the cache, and the index is rebuilt at every start instead.
-  - **Writing files**: The plugin never silently edits notes in your other vaults. Writes only happen (a) inside the active vault via the Obsidian Vault API when you use "Copy to Current Vault & Edit", or (b) when you explicitly confirm a Move/Copy operation to another vault.
+  - **Writing files**: The plugin never silently edits notes in your other vaults. Writes only happen (a) inside the active vault via the Obsidian Vault API when you use "Copy to Current Vault & Edit" or "Insert summary into active note" (2.5.0), or (b) when you explicitly confirm a Move/Copy operation to another vault.
   - **Privacy**: All operations are 100% local. No files, metadata, or telemetry are ever sent over the internet or uploaded to any server.
 
 ---
@@ -45,7 +45,12 @@ Natively, Obsidian does not allow you to open a note from outside the active vau
 - Each preview now shows a **Backlinks** section listing cross-vault notes that link to it.
 
 ### 3. Natural Cross-Vault Links
-Write `[[VaultName::NoteTitle]]` in any note. In Reading View the plugin rewrites these references into clickable links that instantly open the cross-vault note in the read-only preview (right-click opens the source vault). Alias (`[[Vault::Note|text]]`), heading, and path forms are supported. Click-through in Live Preview is not yet supported.
+Write `[[VaultName::NoteTitle]]` in any note. In Reading View the plugin rewrites these references into clickable links that instantly open the cross-vault note in the read-only preview (right-click opens the source vault). Alias (`[[Vault::Note|text]]`), heading, and path forms are supported.
+
+Since 2.5.0 this works everywhere you write:
+- **Live Preview and Source mode** — `[[Vault::Note]]` is shown as a link (links to notes that are not in the index look "unresolved"). A click opens the note read-only (in the current tab for notes of this vault, in the read-only view for other vaults), **Ctrl/Cmd+click** opens a new tab, right-click opens the note in its own vault. While the cursor is inside the raw `[[...]]` text a click just edits it, and in Source mode only Ctrl/Cmd+click opens. Links inside code are left alone.
+- **Autocomplete** — type `[[Work::` (a registered vault name and `::`) to get that vault's notes (fuzzy, at most 20); add `#` after a note for its headings. Plain `[[` suggestions stay Obsidian's own.
+- **Embeds** — `![[Vault::Note]]` and `![[Vault::Note#Heading]]` show the note (or just that heading's section) read-only in Reading View and Live Preview, with an **Open** button. Embeds nested inside embeds go at most 2 levels deep, so two notes embedding each other cannot loop. In Live Preview an embed is shown as a block when it is alone on its line and the cursor is elsewhere.
 
 ### 4. Recent Files & Quick Switch
 - **Recent Files**: See the 50 most recently modified files across *all* your vaults.
@@ -56,6 +61,30 @@ Easily move or copy a note from your current vault to another vault. The plugin 
 
 ### 6. Duplicate Note Detector
 Scan all your connected vaults to find notes with the exact same name, helping you merge scattered information. Each duplicate group now includes a **Compare** view with a line-by-line diff.
+
+Since 2.5.0 there is a second mode, **Similar content**: it finds notes whose text is mostly the same even when their names differ (default minimum similarity 80%, adjustable from 50%). It compares 5-word shingles with MinHash and verifies every candidate pair exactly, shows the similarity as a percentage, runs in small steps so Obsidian stays responsive (with a **Stop** button), skips notes under 8 words, and compares at most 20,000 notes. Nothing is changed or sent anywhere.
+
+### 7. Search operators (2.5.0)
+Type operators in the Command Center or the "Search all vaults" popup (a help list is shown in the Command Center while the box is empty):
+
+| Operator | Meaning |
+|---|---|
+| `vault:Work` | only that vault (`vault:"My Vault"` for names with spaces; several `vault:` mean any of them) |
+| `path:projects` | the path contains that text (several `path:` must all match) |
+| `tag:idea` or `#idea` | has the tag, nested tags included (`#project` matches `#project/alpha`) |
+| `-tag:draft`, `-vault:Old`, `-path:tmp` | leave those out |
+| `-word`, `-"a phrase"` | leave out notes that contain it |
+| `modified:>7d` | changed in the last 7 days (units `h d w m y`; `m` = 30 days) |
+| `modified:<2026-01-01` | last changed before that date (`>`, `>=`, `<=` or a plain date = that day) |
+| `"exact phrase"` | the words in exactly that order |
+
+Operators combine, for example `meeting vault:Work tag:project -tag:draft modified:>30d`. Filters alone (no words) list the matching notes, newest first. Anything not understood is ignored and reported above the results. Saved searches now keep the whole query, operators included.
+
+### 8. Cross-vault map (2.5.0)
+**Open cross-vault map** draws your vaults as circles (size = number of notes) with arrows that count the `[[Vault::Note]]` links from one vault to another. Click an arrow to list the notes that make the connection and open them. Links inside one vault, or to vaults that are not indexed, are not drawn. The first start after updating re-reads every note once to collect these links.
+
+### 9. Change summary (2.5.0)
+**Open cross-vault daily notes** now starts with **What changed**: pick *Today*, *Last 7 days* or a *Custom range* and see the notes created or edited, grouped per vault, with an estimate of the words added. Created notes count all their words; for an edited note the estimate is its growth since the last version the plugin saw before the period (so it is only available once the plugin has seen the note before, and totals may say "or more"). **Insert summary into active note** writes the summary into the note that is open in the *current* vault through the Obsidian Vault API; inserting again replaces the earlier summary instead of adding another. Nothing is ever written to another vault.
 
 ---
 
@@ -68,9 +97,10 @@ Open the **Command Palette** (Ctrl/Cmd + P) and type `Multi-Vault Navigator` to 
 - **Switch vault**
 - **Move/copy current file to vault**
 - **Copy cross-vault link for current file**
-- **Find duplicate notes across vaults**
+- **Find duplicate notes across vaults** (same name or similar content)
 - **Open global tag explorer**
-- **Open cross-vault daily notes**
+- **Open cross-vault map**
+- **Open cross-vault daily notes** (with the change summary)
 - **Refresh index**
 - **Clear cross-vault index**
 

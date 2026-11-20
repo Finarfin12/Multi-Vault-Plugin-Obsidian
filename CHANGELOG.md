@@ -2,6 +2,32 @@
 
 All notable changes to the **Multi-Vault Navigator** plugin will be documented in this file.
 
+## [2.5.0] - 2026-11-20 — "Link, search and summaries"
+Phases 2.5 (links), 2.6 (search and analysis) and 2.7 (summaries) of the roadmap, shipped together, plus fixes for the review-bot warnings of 2.4.0.
+
+### Added
+- **Clickable cross-vault links in Live Preview and Source mode (F7)**: `[[Vault::Note]]` is decorated as a link (unknown notes keep the "unresolved" look). Click opens the note read-only, Ctrl/Cmd+click a new tab, right-click the note in its own vault. A click while the cursor is inside the raw link edits text; in Source mode only Ctrl/Cmd+click opens. Links in code are ignored. The Reading View behaviour is unchanged.
+- **Autocomplete for `[[Vault::` (F8)**: after a registered vault name and `::` the notes of that vault are suggested (fuzzy, at most 20, newest first on ties); `#` after a note suggests its headings. Notes whose name is not unique in the vault are inserted with their path. Plain `[[` suggestions are left to Obsidian.
+- **Cross-vault embeds (F9)**: `![[Vault::Note]]` and `![[Vault::Note#Heading]]` render the note (or one heading section) read-only in Reading View and Live Preview, with an **Open** button. Nesting stops at depth 2, so mutual embeds cannot loop. In Live Preview an embed alone on its line becomes a block while the cursor is elsewhere.
+- **Search operators (F10)**: `vault:`, `path:`, `tag:` / `#tag`, `-tag:` / `-vault:` / `-path:`, `-word`, `-"phrase"`, `modified:>7d`, `modified:<2026-01-01`, `"exact phrase"`, all combinable, in the Command Center and the "Search all vaults" popup, with a help list in the Command Center. Invalid parts are reported, never fatal. Saved searches now store the whole query (before, `#tags` were dropped).
+- **Duplicate detector: "Similar content" mode (F11)**: 5-word shingles + 64-value MinHash + LSH (16 bands × 4 rows) + exact Jaccard verification; default threshold 80%, similarity shown as a percentage, chunked with a **Stop** button, notes under 8 words skipped, at most 20,000 notes. The "Same name" mode is unchanged.
+- **Cross-vault map (F12)**: new command **Open cross-vault map** draws vaults as circles (size = note count) and arrows with the number of `[[Vault::Note]]` links; clicking an arrow lists the notes behind it. Plain SVG, no new dependency.
+- **Change summary (F13)**: the daily-notes view starts with **What changed** — Today, Last 7 days or a custom range, grouped per vault, with an estimated number of words added (created notes: all words; edited notes: growth since the last version the plugin saw before the period). **Insert summary into active note** writes (Vault API, active vault only) a block between markers; inserting again replaces it. The daily-notes list below is unchanged.
+- Index fields `crossVaultLinks`, `wordCount`, `ctime` and `wordHistory` (needed by F12/F13).
+
+### Fixed (F15, review bot)
+- `no-unsafe-return` / `no-unsafe-call` in `search-engine.ts`: values that come out of the search library are now typed once, at a single boundary (`RawSearchHit`), and nothing else uses the library's types. Local lint now enforces `no-unsafe-*` as errors.
+- CSS: removed `text-decoration` from `styles.css` (it is only partly supported); cross-vault links keep Obsidian's default link look, and the title hover in the Command Center changes colour instead.
+
+### Changed
+- The first start after updating re-reads every note once (the parse signature changed because new fields are collected). Search keeps working from the cached index meanwhile.
+- A plain click on a cross-vault link in the editor reuses an open read-only tab (or the current tab for a note of this vault) instead of always opening a new tab; Ctrl/Cmd+click always opens a new tab.
+- `DailyDashboardView` and `DuplicateDetectorModal` take the plugin / settings instead of separate services; `@codemirror/state` and `@codemirror/view` are listed in `devDependencies` at the versions Obsidian 1.13 ships (they are not bundled).
+- Tests: `npm test` now runs 146 tests (links, operators, similarity, map, summary, plus everything from 2.4.0).
+
+### Not verified yet
+- Everything that needs a running Obsidian: Live Preview decorations and clicks, the autocomplete popup, embeds in both views, the new screens, restart behaviour. See the release report.
+
 ## [2.4.0] - 2026-11-20 — "Foundation"
 First phase of the 2.4 → 2.7 roadmap: a faster, always-current, full-text index.
 

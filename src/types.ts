@@ -21,6 +21,14 @@ export interface IndexedFile {
   headings?: string[];
   tags?: string[];
   outgoingLinks?: string[];
+  /** `vaultname::Note` targets of [[Vault::Note]] links (vault name lower-cased); feeds the cross-vault map. */
+  crossVaultLinks?: string[];
+  /** Approximate number of words in the note body. */
+  wordCount?: number;
+  /** Creation time (ms) when the file system reports one. */
+  ctime?: number;
+  /** (modified time, word count) pairs seen over time, newest last; used to estimate words added in a period. */
+  wordHistory?: Array<[number, number]>;
   mtime: number;
   size: number;
   contentPreview?: string;

@@ -3,6 +3,7 @@ import { IndexedFile, IndexOptions } from '../types';
 import { SearchEngine } from '../search-engine';
 import { FileOpener } from '../file-opener';
 import { buildSnippet, loadSnippet } from '../search/snippet';
+import { runSearch } from '../search/run-search';
 
 type SnippetOptions = Pick<IndexOptions, 'fullText' | 'maxIndexedBytes'>;
 
@@ -22,15 +23,17 @@ export class SearchModal extends SuggestModal<IndexedFile> {
     this.setPlaceholder("Search all vaults...");
   }
 
-  getSuggestions(query: string): IndexedFile[] {
+  async getSuggestions(query: string): Promise<IndexedFile[]> {
     this.lastQuery = query;
     this.matchedTerms.clear();
     if (!query.trim()) {
       return this.searchEngine.getRecentFiles(10);
     }
-    const results = this.searchEngine.search(query, { limit: 50 });
-    results.forEach(r => this.matchedTerms.set(r.file.id, r.terms));
-    return results.map(r => r.file);
+    // Operators (vault:, path:, tag:, modified:, "phrase", -word) are understood here too
+    const run = await runSearch(this.searchEngine, query, { limit: 50, maxIndexedBytes: this.indexOptions.maxIndexedBytes });
+    if (query !== this.lastQuery) return []; // the user kept typing; a newer call answers
+    run.results.forEach(r => this.matchedTerms.set(r.file.id, r.terms.length > 0 ? r.terms : run.highlightTerms));
+    return run.results.map(r => r.file);
   }
 
   renderSuggestion(file: IndexedFile, el: HTMLElement) {

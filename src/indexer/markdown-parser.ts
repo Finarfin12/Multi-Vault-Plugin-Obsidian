@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { IndexedFile, VaultConfig } from '../types';
 import { FileEntry } from './file-scanner';
+import { findCrossVaultLinks } from '../links/link-parser';
 
 export interface ParserOptions {
   /** Return the note body so it can be full-text indexed. */
@@ -21,6 +22,12 @@ const FRONTMATTER_REGEX = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 export function stripFrontmatter(content: string): string {
   const match = content.match(FRONTMATTER_REGEX);
   return match ? content.substring(match[0].length) : content;
+}
+
+/** Number of words (runs of letters or digits, any script). */
+export function countWords(text: string): number {
+  const m = text.match(/[\p{L}\p{N}]+/gu);
+  return m ? m.length : 0;
 }
 
 /** Cut text to at most `maxBytes` UTF-8 bytes without leaving a broken character at the end. */
@@ -87,6 +94,7 @@ export class MarkdownParser {
     // Extract outgoing wikilinks (for cross-vault backlinks).
     // Supports [[Note]], [[Note|alias]], [[Note#heading]], [[Vault::Note]].
     const outgoingLinks = this.extractOutgoingLinks(textContent);
+    const crossVaultLinks = this.extractCrossVaultLinks(textContent);
 
     // Generate preview
     const preview = textContent
@@ -107,8 +115,11 @@ export class MarkdownParser {
       headings,
       tags,
       outgoingLinks,
+      crossVaultLinks,
       mtime: file.mtime,
       size: file.size,
+      ctime: file.ctime,
+      wordCount: countWords(textContent),
       contentPreview: preview
     };
 
@@ -187,6 +198,15 @@ export class MarkdownParser {
     }
 
     return [];
+  }
+
+  /** `vaultname::Note` for every [[Vault::Note]] / ![[Vault::Note]] link outside code, without duplicates. */
+  private extractCrossVaultLinks(text: string): string[] {
+    const targets = new Set<string>();
+    for (const link of findCrossVaultLinks(text)) {
+      targets.add(`${link.vaultName.toLowerCase()}::${link.notePath ?? link.noteName}`);
+    }
+    return Array.from(targets);
   }
 
   private extractOutgoingLinks(text: string): string[] {

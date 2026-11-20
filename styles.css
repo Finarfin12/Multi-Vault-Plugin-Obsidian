@@ -57,7 +57,6 @@
 /* Cross-vault links (rewritten from core's unresolved anchors) */
 .mvn-cross-vault-link {
   color: var(--link-color);
-  text-decoration-line: var(--link-decoration);
   cursor: var(--cursor-link);
 }
 
@@ -150,7 +149,7 @@
 }
 
 .mvn-sp-title:hover {
-  text-decoration: underline;
+  color: var(--link-color-hover);
 }
 
 .mvn-sp-snippet {
@@ -794,4 +793,169 @@ button.mvn-btn-small:hover {
 
 .mvn-diff-add {
   background-color: rgba(0, 128, 0, 0.12);
+}
+
+/* Live Preview: cross-vault links (F7) */
+.cm-line .mvn-cross-vault-link {
+  color: var(--link-color);
+  cursor: var(--cursor-link);
+}
+
+.cm-line .mvn-cross-vault-link.mvn-cross-vault-link-unresolved {
+  color: var(--link-unresolved-color);
+  opacity: var(--link-unresolved-opacity);
+}
+
+/* Autocomplete rows for [[Vault:: (F8) */
+.mvn-suggest-title {
+  color: var(--text-normal);
+}
+
+.mvn-suggest-path {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+/* Cross-vault embeds (F9) */
+.mvn-embed,
+.mvn-embed-widget {
+  display: block;
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--radius-s);
+  margin: var(--size-4-2) 0;
+  padding: var(--size-4-2) var(--size-4-3);
+  background-color: var(--background-secondary);
+}
+
+.mvn-embed-widget > .mvn-embed {
+  border: none;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.mvn-embed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.mvn-embed-open {
+  flex: none;
+}
+
+.mvn-embed-notice {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Search operators help and notes (F10) */
+.mvn-sp-help {
+  margin-top: var(--size-4-3);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.mvn-sp-help code {
+  color: var(--text-accent);
+}
+
+.mvn-sp-problems {
+  margin-bottom: var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+}
+
+/* Cross-vault map (F12) */
+.mvn-vault-map {
+  padding: var(--size-4-4);
+}
+
+.mvn-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mvn-map-svg {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+}
+
+.mvn-map-node circle {
+  fill: var(--background-secondary);
+  stroke: var(--interactive-accent);
+  stroke-width: 2px;
+}
+
+.mvn-map-node-name {
+  fill: var(--text-normal);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.mvn-map-node-count {
+  fill: var(--text-muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.mvn-map-edge-hit {
+  stroke: transparent;
+  stroke-width: 14px;
+  cursor: pointer;
+}
+
+.mvn-map-edge-line {
+  stroke: var(--text-muted);
+  stroke-width: 2px;
+  fill: none;
+  pointer-events: none;
+}
+
+.mvn-map-arrowhead {
+  fill: var(--text-muted);
+}
+
+.mvn-map-edge-label {
+  fill: var(--text-normal);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.mvn-map-edge:hover .mvn-map-edge-line,
+.mvn-map-edge:focus .mvn-map-edge-line,
+.mvn-map-edge.is-selected .mvn-map-edge-line {
+  stroke: var(--interactive-accent);
+  stroke-width: 3px;
+}
+
+.mvn-map-details {
+  margin-top: var(--size-4-3);
+}
+
+.mvn-map-link {
+  cursor: pointer;
+}
+
+/* Change summary in the daily dashboard (F13) */
+.mvn-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+}
+
+.mvn-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
 }

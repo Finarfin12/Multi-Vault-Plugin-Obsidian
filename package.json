@@ -1,6 +1,6 @@
 {
   "name": "multi-vault-navigator",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Cross-vault search and navigation.",
   "main": "main.js",
   "scripts": {
@@ -18,6 +18,8 @@
   "author": "Hir43th",
   "license": "MIT",
   "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
     "@types/node": "^20.11.0",
     "esbuild": "^0.20.0",
     "eslint": "^9.39.5",

@@ -16,6 +16,7 @@ declare module 'fs' {
     isDirectory(): boolean;
     isFile(): boolean;
     mtimeMs: number;
+    birthtimeMs: number;
     size: number;
   }
 
